@@ -66,7 +66,7 @@ class AppFlowHandler(
     }
 
     private fun checkAppLock(packageName: String) {
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("app_lock_enabled", false)
         if (!isEnabled) return
 
@@ -126,7 +126,7 @@ class AppFlowHandler(
     }
 
     private fun processNightLightChange(packageName: String) {
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("dynamic_night_light_enabled", false)
         if (!isEnabled) return
 

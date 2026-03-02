@@ -46,7 +46,7 @@ fun SoundModeTileSettingsUI(
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences(
-            "essentials_prefs",
+            "patchwork_prefs",
             android.content.Context.MODE_PRIVATE
         )
     }

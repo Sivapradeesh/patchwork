@@ -455,7 +455,7 @@ class WatermarkViewModel(
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                         put(
                             android.provider.MediaStore.Images.Media.RELATIVE_PATH,
-                            "Pictures/Essentials"
+                            "Pictures/Patchwork"
                         )
                     }
                 }
@@ -528,7 +528,7 @@ class WatermarkViewModel(
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                     put(
                         android.provider.MediaStore.Images.Media.RELATIVE_PATH,
-                        "Pictures/Essentials/Watermarks"
+                        "Pictures/Patchwork/Watermarks"
                     )
                 }
             }

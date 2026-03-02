@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Patchwork</string>
     <string name="label_beta">BÊTA</string>
-    <string name="accessibility_service_description"><b>Service d\'accessibilité Essentials</b>\n\nCe service est requis pour les fonctionnalités suivantes :\n\n<b>• Réattribution d\'un bouton physique :</b>\nDétecte les appuis sur le bouton volume même si l\'écran est éteint pour déclencher des actions comme allumer la lampe-torche.\n\n<b>• Réglage par appli :</b>\nSurveille les applications actives pour appliquer des profils spécifiques pour le mode éclairage nocturne dynamique, le réglage de couleurs des notifications lumineuses et le verrouillage d\'applis.\n\n<b>• Contrôler l\'écran :</b>\nAutorise l\'application à verrouiller l\'écran (par exemple en utilisant le Double Tap ou les Widgets) et détecter le changement d\'état de l\'écran.\n\n<b>• Sécurité :</b>\nPrévenir les changements non autorisé en détectant le contenu des fenêtres lorsque l\'appareil est verrouillé.\n\n<small>Aucun texte saisi ou de données utilisateur sensibles sont collectées ou transmises.</small></string>
+    <string name="accessibility_service_description"><b>Service d\'accessibilité Patchwork</b>\n\nCe service est requis pour les fonctionnalités suivantes :\n\n<b>• Réattribution d\'un bouton physique :</b>\nDétecte les appuis sur le bouton volume même si l\'écran est éteint pour déclencher des actions comme allumer la lampe-torche.\n\n<b>• Réglage par appli :</b>\nSurveille les applications actives pour appliquer des profils spécifiques pour le mode éclairage nocturne dynamique, le réglage de couleurs des notifications lumineuses et le verrouillage d\'applis.\n\n<b>• Contrôler l\'écran :</b>\nAutorise l\'application à verrouiller l\'écran (par exemple en utilisant le Double Tap ou les Widgets) et détecter le changement d\'état de l\'écran.\n\n<b>• Sécurité :</b>\nPrévenir les changements non autorisé en détectant le contenu des fenêtres lorsque l\'appareil est verrouillé.\n\n<small>Aucun texte saisi ou de données utilisateur sensibles sont collectées ou transmises.</small></string>
     <string name="freeze_activity_title">Gel d\'applis</string>
     <string name="freeze_activity_subtitle">Désactiver les applis rarement utilisées</string>
     <string name="freeze_shortcut_short_label">Gel d\'applis</string>
@@ -187,7 +187,7 @@
     <string name="tile_app_freezing">Gel d\'applis</string>
     <string name="tile_flashlight_pulse">Impulsion de lampe torche</string>
     <string name="tile_stay_awake">Rester allumé</string>
-    <string name="input_method_label">Clavier Essentials</string>
+    <string name="input_method_label">Clavier Patchwork</string>
     <string name="subtype_en_us">Anglais (US)</string>
     <string name="tile_active">Actif</string>
     <string name="tile_inactive">Inactif</string>
@@ -525,7 +525,7 @@
     <string name="perm_battery_optimization_title">Optimisation de la batterie</string>
     <string name="perm_battery_optimization_desc">Assure que le service ne soit pas fermé par le système pour économise de l\'énergie.</string>
     <!-- Tabs -->
-    <string name="tab_essentials">Essentials</string>
+    <string name="tab_essentials">Patchwork</string>
     <string name="tab_freeze">Gel d\'applis</string>
     <string name="tab_freeze_title">Gel d\'applis</string>
     <string name="tab_diy">DIY</string>
@@ -562,7 +562,7 @@
     <!-- Keyboard Setup -->
     <string name="label_keyboard_setup">Configuration du clavier</string>
     <string name="btn_enable_keyboard">Activer dans les paramètres</string>
-    <string name="btn_select_keyboard">Changer vers Essentials</string>
+    <string name="btn_select_keyboard">Changer vers Patchwork</string>
     <string name="label_enabled">Activé</string>
     <string name="label_disabled">Désactivé</string>
     <string name="tile_adaptive_brightness">Luminosité adaptative</string>
@@ -590,12 +590,12 @@
     <string name="about_desc_dynamic_night_light">Activez/désactivez automatiquement le filtre lumière bleu de votre écran en fonction de l\'application en avant plan.</string>
     <string name="about_desc_screen_locked_security">Renforcez la sécurité quand l\'appareil est verrouillé.\n\nRestreignez l\'accès à quelques blocs de Réglages rapides sensibles pour empêcher la modification non autorisée de la configuration réseau et empêchez toute nouvelle tentative en ralentissant les animations pour empêcher les d\'appuis rapides pouvant contourner la protection.\n\nCette fonctionnalité n\'est pas robuste et peut être contournée de multiples façons comme en utilisant certains blocs n\'ouvrant pas de fenêtre lors de l\'interaction comme les blocs de Bluetooth ou de Mode avion, leur utilisation ne peut donc être empêchée.</string>
     <string name="about_desc_app_lock">Protégez vos applis avec une seconde couche d\'authentification.\n\nLa méthode d\'authentification de déverrouillage de l\'appareil sera utilisée si elle remplit les critères de niveau de sécurité biométrique \"3\" selon les critères d\'Android.</string>
-    <string name="about_desc_location_reached">Soyez notifiés quand vous vous approchez de votre destination pour être sûr de ne jamais zapper votre arrêt.\n\nLancez Google Maps, appuyez longuement à proximité de votre destination et veillez à ce qu\'il soit écrit \"Repère placé\" (autrement, le calcul de la distance peut ne pas être précis) et faites partager la position dans l\'appli Essentials pour démarrer le suivi.</string>
+    <string name="about_desc_location_reached">Soyez notifiés quand vous vous approchez de votre destination pour être sûr de ne jamais zapper votre arrêt.\n\nLancez Google Maps, appuyez longuement à proximité de votre destination et veillez à ce qu\'il soit écrit \"Repère placé\" (autrement, le calcul de la distance peut ne pas être précis) et faites partager la position dans l\'appli Patchwork pour démarrer le suivi.</string>
     <string name="about_desc_freeze">Gelez des applis pour les empêcher de tourner en arrière-plan.\n\nPrévenir l\'utilisation de la batterie et de données en gelant totalement les applis quand vous ne les utilisez pas. Elles seront dégelées instantanément quand vous les lancez. Les applis ne seront pas visibles dans le tirroir d\'applications et elles ne vont également pas apparaître dans les mises à jour du Play Store quand elles sont gelées.</string>
     <string name="about_desc_system_keyboard">Une méthode d\'entrée personnalisée que personne n\'a demandé.\n\nC\'est juste une expérimentation. De multiples langues peuvent ne pas être supportés car c\'est une implémentation très complexe et chronophage.</string>
     <string name="about_desc_batteries">Surveillez le niveau de batterie de vos appareils connectés.\n\nRegardez le status de la batterie de vos écouteurs, casques, montres et autres accessoires dans un seul endroit. Connectez l\'application AirSync pour afficher le niveau de batterie de votre Mac également.</string>
-    <string name="about_desc_watermark">Ajoutez une légende ou un filigrane personnalisé à vos photos avec les données EXIF et les informations de l\'appareil.\n\nPartagez directement une image depuis une autre appli vers Essentials pour ajouter facilement un filigrane.</string>
-    <string name="about_desc_calendar_sync">Synchronisez tous vos événements à venir de votre calendrier peu importe les restrictions sur les comptes Google qui ne peuvent être ajoutés à cause de politique de travail ou d\'études. \n\nVeillez à installer l\'application WearOS \"Essentials Companion\" pour afficher les événements dans l\'appli ainsi que dans un bloc ou en carte.</string>
+    <string name="about_desc_watermark">Ajoutez une légende ou un filigrane personnalisé à vos photos avec les données EXIF et les informations de l\'appareil.\n\nPartagez directement une image depuis une autre appli vers Patchwork pour ajouter facilement un filigrane.</string>
+    <string name="about_desc_calendar_sync">Synchronisez tous vos événements à venir de votre calendrier peu importe les restrictions sur les comptes Google qui ne peuvent être ajoutés à cause de politique de travail ou d\'études. \n\nVeillez à installer l\'application WearOS \"Patchwork Companion\" pour afficher les événements dans l\'appli ainsi que dans un bloc ou en carte.</string>
     <string name="about_desc_app_updates">Surveillez les mises à jour de vos applis installées.\n\nSoyez notifiés des mises à jour disponibles, regardez les notes de versions et installez-les facilement avec un appui.</string>
     <string name="about_desc_call_vibrations">Ajoutez un retour haptique à votre appareil.\n\nL\'appareil vibre quand un appareil est établi, terminé ou accepté, ce qui vous donne une confirmation sans regarder à l\'écran.</string>
     <string name="about_desc_sound_mode_tile">Changez rapidement entre les modes Son, Vibreur et Silencieux.\n\nUn bloc pratique pour changer votre mode de sonnerie sans utiliser les boutons volume ou les paramètres. Vous pouvez réordonner les modes ou les désactiver s\'ils ne sont pas utile pour personnaliser le comportement du bloc.</string>
@@ -893,7 +893,7 @@
     <!-- Instructions Content -->
     <string name="instruction_section_perms_title">Permissions d\'accessibilité, de notification et de superposition</string>
     <string name="instruction_step_perms_1">Vous pouvez obtenir ce message d\'accès refusé si vous essayez d\'accorder des permissions sensibles telles que l\'accessibilité, l\'accès aux notifications ou les permissions de superposition. Pour l\'accorder, vérifiez les étapes ci-dessous.</string>
-    <string name="instruction_step_perms_2">1. Allez dans la page d\'informations de l\'application Essentials.</string>
+    <string name="instruction_step_perms_2">1. Allez dans la page d\'informations de l\'application Patchwork.</string>
     <string name="instruction_step_perms_3">2. Ouvrez le menu à 3 points en haut à droite et sélectionnez \"Autoriser les paramètres restreints\". Vous devrez peut-être vous authentifier avec la biométrie. Une fois fait, réessayez d\'accorder la permission.</string>
     <string name="instruction_section_shizuku_title">Shizuku</string>
     <string name="instruction_section_shizuku_desc">Shziuku est un outil puissant qui permet aux applications d\'utiliser directement les APIs système directement avec ADB ou l\'accès racine (root). Il est requis pour des fonctionnalités comme le mode économie d\'énergie maps ou le gel d\'applis. Il aide également à donner certaines permissions comme WRITE_SECURE_SETTINGS. \n\nMais la version de Shizuku disponible sur le Play Store peut-être obsolète et sera probablement inutilisable sur les versions récentes d\'Android. Dans ce cas, merci d\'installer la dernière version depuis le GitHub officiel ou un fork mis à jour.</string>
@@ -925,12 +925,12 @@
     <string name="action_report_github">Ouvrir une Issue sur GitHub</string>
     <string name="action_report_email">Signalement par e-mail</string>
     <string name="action_copy_clipboard">Copier dans le presse-papiers</string>
-    <string name="bug_report_email_subject">Signalement de bug Essentials</string>
+    <string name="bug_report_email_subject">Signalement de bug Patchwork</string>
     <string name="bug_report_send_via">Envoyer via</string>
     <!-- Location Reached -->
     <string name="feat_location_reached_title">On est arrivés ?</string>
     <string name="feat_location_reached_desc">Soyez notifiés lorsque vous arrivez à une destination</string>
-    <string name="location_reached_how_to">Ouvrez Google Maps, choisissez un endroit et partagez-le dans Essentials.</string>
+    <string name="location_reached_how_to">Ouvrez Google Maps, choisissez un endroit et partagez-le dans Patchwork.</string>
     <string name="location_reached_radius_title">Rayon : %d m</string>
     <string name="perm_location_title">Position</string>
     <string name="perm_location_desc">Utilisé pour détecter l\'arrivée à la destination.</string>
@@ -953,7 +953,7 @@
     <string name="location_reached_dist_m">%1$d m</string>
     <string name="location_reached_dist_km">%1$.1f km</string>
     <string name="location_reached_service_title">Alarme de trajet active</string>
-    <string name="location_reached_service_remaining">%1$s restant (%2$d%)</string>
+    <string name="location_reached_service_remaining" formatted="false">%1$s restant (%2$d%)</string>
     <string name="location_reached_channel_name">Progrès du trajet</string>
     <string name="location_reached_channel_desc">Affiche la distance de la destination en temps réel</string>
     <string name="location_reached_alarm_title">Destination à proximité</string>

@@ -23,7 +23,7 @@ class SettingsRepository(private val context: Context) {
     private val gson = Gson()
 
     companion object {
-        const val PREFS_NAME = "essentials_prefs"
+        const val PREFS_NAME = "patchwork_prefs"
 
         // Keys
         const val KEY_WIDGET_ENABLED = "widget_enabled"
@@ -503,7 +503,7 @@ class SettingsRepository(private val context: Context) {
         return try {
             val allConfigs = mutableMapOf<String, Map<String, Map<String, Any>>>()
             val prefFiles = listOf(
-                "essentials_prefs",
+                "patchwork_prefs",
                 "caffeinate_prefs",
                 "link_prefs",
                 "diy_automations_prefs"

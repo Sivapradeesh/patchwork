@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Patchwork</string>
     <string name="label_beta">BETA</string>
-    <string name="accessibility_service_description"><b>Toegankelijkheidsservice van Essentials</b>\n\nDeze service is vereist voor de volgende geavanceerde functies:\n\n<b>• Opnieuw toewijzen van fysieke knoppen:</b>\nDetecteert het klikken van de volumeknoppen, zelfs wanneer het scherm uit is, om acties te starten zoals de zaklamp.\n\n<b>• Instellingen per app:</b>\nBekijkt de momenteel actieve app om specifieke profielen toe te passen voor Dynamisch nachtlicht, Meldingsbelichtingskleuren en Appvergrendeling.\n\n<b>• Schermbesturing:</b>\nLaat de app het scherm vergrendelen (bijv. met dubbelklikken of met widgets) en veranderingen van schermstaat detecteren.\n\n<b>• Beveiliging:</b>\nVoorkomt ongeautoriseerde wijzigingen door vensterinhoud te detecteren wanneer het apparaat vergrendeld is.\n\n<small>Geen invoertekst of gevoelige gebruikersdata wordt verzameld of overgezet.</small></string>
+    <string name="accessibility_service_description"><b>Toegankelijkheidsservice van Patchwork</b>\n\nDeze service is vereist voor de volgende geavanceerde functies:\n\n<b>• Opnieuw toewijzen van fysieke knoppen:</b>\nDetecteert het klikken van de volumeknoppen, zelfs wanneer het scherm uit is, om acties te starten zoals de zaklamp.\n\n<b>• Instellingen per app:</b>\nBekijkt de momenteel actieve app om specifieke profielen toe te passen voor Dynamisch nachtlicht, Meldingsbelichtingskleuren en Appvergrendeling.\n\n<b>• Schermbesturing:</b>\nLaat de app het scherm vergrendelen (bijv. met dubbelklikken of met widgets) en veranderingen van schermstaat detecteren.\n\n<b>• Beveiliging:</b>\nVoorkomt ongeautoriseerde wijzigingen door vensterinhoud te detecteren wanneer het apparaat vergrendeld is.\n\n<small>Geen invoertekst of gevoelige gebruikersdata wordt verzameld of overgezet.</small></string>
     <string name="freeze_activity_title">Apps bevriezen</string>
     <string name="freeze_activity_subtitle">Schakel apps uit die weinig worden gebruikt</string>
     <string name="freeze_shortcut_short_label">Apps bevriezen</string>
@@ -187,7 +187,7 @@
     <string name="tile_app_freezing">Apps bevriezen</string>
     <string name="tile_flashlight_pulse">Zaklamppuls</string>
     <string name="tile_stay_awake">Wakker blijven</string>
-    <string name="input_method_label">Essentials-toetsenbord</string>
+    <string name="input_method_label">Patchwork-toetsenbord</string>
     <string name="subtype_en_us">Engels (US)</string>
     <string name="tile_active">Actief</string>
     <string name="tile_inactive">Inactief</string>
@@ -525,7 +525,7 @@
     <string name="perm_battery_optimization_title">Batterijoptimalisatie</string>
     <string name="perm_battery_optimization_desc">Zorgt ervoor dat de service niet gestopt wordt door het systeem om stroom te besparen.</string>
     <!-- Tabs -->
-    <string name="tab_essentials">Essentials</string>
+    <string name="tab_essentials">Patchwork</string>
     <string name="tab_freeze">Bevriezen</string>
     <string name="tab_freeze_title">Bevroren</string>
     <string name="tab_diy">DIY</string>
@@ -562,7 +562,7 @@
     <!-- Keyboard Setup -->
     <string name="label_keyboard_setup">Toetsenbord instellen</string>
     <string name="btn_enable_keyboard">In de instellingen inschakelen</string>
-    <string name="btn_select_keyboard">Wisselen naar Essentials</string>
+    <string name="btn_select_keyboard">Wisselen naar Patchwork</string>
     <string name="label_enabled">Ingeschakeld</string>
     <string name="label_disabled">Uitgeschakeld</string>
     <string name="tile_adaptive_brightness">Aangepaste helderheid</string>
@@ -590,11 +590,11 @@
     <string name="about_desc_dynamic_night_light">Automatisch de blauwe lichtfilter van scherm aanpassen op basis van de app op de voorgrond.</string>
     <string name="about_desc_screen_locked_security">Verbeter je beveiliging als je apparaat vergrendeld is.\n\nBeperk toegang tot gevoelige tegels in de Snelle instellingen zoals netwerkwijzigingen. Ook wordt de animatiesnelheid verlaagd om aanraak spammen te voorkomen.\n\nDeze functie is niet robuust en heeft mogelijk problemen zoals dat sommige tegels die direct aanpasbaar zijn zoals Bluetooth of de vliegtuigstand niet te voorkomen zijn.</string>
     <string name="about_desc_app_lock">Beveilig je apps met een tweede beveiligingslaag. \n\nJe vergrendelingsmethode zal gebruikt worden als het maar aan de klasse 3 biometrische beveiligingsstandaarden voldoet.</string>
-    <string name="about_desc_location_reached">Krijg een melding wanneer je dicht bij een bestemming komt zodat je nooit een stop mist. \n\nGa naar Google Maps, druk een speld lang in dicht bij je bestemming en zorg ervoor dat het \"Geplaatste speld\" zegt (anders is de afstandsberekening mogelijk niet accuraat), deel daarna de locatie met de Essentials-app en start met volgen.</string>
+    <string name="about_desc_location_reached">Krijg een melding wanneer je dicht bij een bestemming komt zodat je nooit een stop mist. \n\nGa naar Google Maps, druk een speld lang in dicht bij je bestemming en zorg ervoor dat het \"Geplaatste speld\" zegt (anders is de afstandsberekening mogelijk niet accuraat), deel daarna de locatie met de Patchwork-app en start met volgen.</string>
     <string name="about_desc_freeze">Bevriezen van apps voorkomt dat ze in de achtergrond uitvoeren. \n\nVoorkomt dat de batterij leeg gaat en dataverbruik door apps helemaal te bevriezen als je ze niet gebruikt. Ze worden meteen ontdooit als je ze opent. De apps zullen niet zichtbaar zijn in de app-lade en als updates in de Play Store als ze bevroren zijn.</string>
     <string name="about_desc_system_keyboard">Een aangepaste invoermethode waar niemand om vroeg.\n\nHet is gewoon een experiment. Meerdere talen krijgen mogelijk geen ondersteuning omdat het een complexe en tijdrovende implementatie is.</string>
     <string name="about_desc_batteries">Hou het batterijniveau van alle verbonden apparaten in de gaten. \n\n Bekijk de batterijstatus van je Bluetooth koptelefoon, horloge en andere accessoires op één plek. Verbind met AirSync om ook het batterijniveau van je Mac te bekijken.</string>
-    <string name="about_desc_watermark">Voeg een aangepast onderschrift/watermerk toe aan je foto\'s met EXIF-data en apparaatinformatie.\n\nDeel een afbeelding direct vanuit een andere app naar Essentials om makkelijk een watermerk toe te voegen.</string>
+    <string name="about_desc_watermark">Voeg een aangepast onderschrift/watermerk toe aan je foto\'s met EXIF-data en apparaatinformatie.\n\nDeel een afbeelding direct vanuit een andere app naar Patchwork om makkelijk een watermerk toe te voegen.</string>
     <string name="about_desc_calendar_sync">Synchroniseer al je opkomende kalendergebeurtenissen zelfs met de beperkingen op werk of school Google-accounts die dat niet toestaan op wearOS apparaten. \n\nZorg ervoor dat je de wearOS Patchwork app ook installeert om het rooster in de app en in een tegel te laten zien.</string>
     <string name="about_desc_app_updates">Volg updates voor je geïnstalleerde apps.\n\nKrijg een melding over beschikbare updates, bekijk het Wijzigingslogboek en installeer ze met de klik van een knop.</string>
     <string name="about_desc_call_vibrations">Voeg haptische feedback toe aan je oproepen.\n\nTrillen wanneer een oproep is verbonden, niet meer verbonden of geaccepteerd is, wat een bevestiging geeft zonder naar je scherm te hoeven kijken.</string>
@@ -893,7 +893,7 @@
     <!-- Instructions Content -->
     <string name="instruction_section_perms_title">Machtigingen voor toegankelijkheid, meldingen en overlays</string>
     <string name="instruction_step_perms_1">Dit toegangsweigeringsbericht kun je krijgen als je probeert gevoelige machtigingen te geven, zoals toegankelijkheid, meldingsluisteraar of overlaymachtigingen. Volg de onderstaande stappen om deze machtigingen te geven.</string>
-    <string name="instruction_step_perms_2">1. Ga naar de app-info van Essentials.</string>
+    <string name="instruction_step_perms_2">1. Ga naar de app-info van Patchwork.</string>
     <string name="instruction_step_perms_3">2. Open het met de drie puntjes en selecteer \"Beperkte instellingen toestaan\". Mogelijk moet je authenticeren met biometrie. Als je klaar bent, probeer de machtigingen opnieuw te geven.</string>
     <string name="instruction_section_shizuku_title">Shizuku</string>
     <string name="instruction_section_shizuku_desc">Shizuku is een krachtig hulpmiddel die apps direct toestaat om systeem-API\'s te gebruiken met ADB of root. Het is vereist voor functies zoals Maps-energiebesparingsmodus en Apps bevriezen. En zal helpen met het toestaan van sommige machtigingen zoals WRITE_SECUSRE_SETTINGS. \n\nDe Play Store-versie van Shizuku is mogelijk verouderd en onbruikbaar bij recente Android-versies. In dat geval kun je gebruik maken van de nieuwste versie op GitHub of een geüpdate fork.</string>
@@ -925,12 +925,12 @@
     <string name="action_report_github">Issue openen op GitHub</string>
     <string name="action_report_email">Per email verzenden</string>
     <string name="action_copy_clipboard">Naar het klembord kopiëren</string>
-    <string name="bug_report_email_subject">Essentials foutrapport</string>
+    <string name="bug_report_email_subject">Patchwork foutrapport</string>
     <string name="bug_report_send_via">Sturen via</string>
     <!-- Location Reached -->
     <string name="feat_location_reached_title">Are We There Yet?</string>
     <string name="feat_location_reached_desc">Prepare for your destination.</string>
-    <string name="location_reached_how_to">Open your map app, pick a location, and share it to Essentials.</string>
+    <string name="location_reached_how_to">Open your map app, pick a location, and share it to Patchwork.</string>
     <string name="location_reached_radius_title">Radius: %d m</string>
     <string name="perm_location_title">Locatie</string>
     <string name="perm_location_desc">Gebruikt bij het detecteren van de aankomst bij je locatie</string>
@@ -953,7 +953,7 @@
     <string name="location_reached_dist_m">%1$d m</string>
     <string name="location_reached_dist_km">%1$.1f km</string>
     <string name="location_reached_service_title">Travel Alarm active</string>
-    <string name="location_reached_service_remaining">%1$s resterend (%2$d%%)</string>
+    <string name="location_reached_service_remaining" formatted="false">%1$s resterend (%2$d%%)</string>
     <string name="location_reached_channel_name">Reisvoortgang</string>
     <string name="location_reached_channel_desc">Laat de realtime afstand tot de bestemming zien</string>
     <string name="location_reached_alarm_title">Bestemming dichtbij</string>

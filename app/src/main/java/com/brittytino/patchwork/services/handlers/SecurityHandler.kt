@@ -20,7 +20,7 @@ class SecurityHandler(
     private var isScaleModified: Boolean = false
 
     fun onAccessibilityEvent(event: AccessibilityEvent) {
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val isScreenLockedSecurityEnabled =
             prefs.getBoolean("screen_locked_security_enabled", false)
 

@@ -159,7 +159,7 @@ class StatusBarIconViewModel : ViewModel() {
         iconState.value = visible
 
         // Save to preferences
-        context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE).edit {
+        context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE).edit {
             putBoolean(
                 StatusBarIconRegistry.getIconById(iconId)?.preferencesKey
                     ?: "icon_${iconId}_visible", visible
@@ -224,7 +224,7 @@ class StatusBarIconViewModel : ViewModel() {
 
     fun setSmartWiFiEnabled(enabled: Boolean, context: Context) {
         isSmartWiFiEnabled.value = enabled
-        context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE).edit {
+        context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE).edit {
             putBoolean(PREF_SMART_WIFI_ENABLED, enabled)
         }
 
@@ -238,7 +238,7 @@ class StatusBarIconViewModel : ViewModel() {
 
     fun setSmartDataEnabled(enabled: Boolean, context: Context) {
         isSmartDataEnabled.value = enabled
-        context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE).edit {
+        context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE).edit {
             putBoolean(PREF_SMART_DATA_ENABLED, enabled)
         }
 
@@ -253,7 +253,7 @@ class StatusBarIconViewModel : ViewModel() {
     }
 
     fun updateSelectedNetworkTypes(context: Context, enabled: Boolean) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val currentTypes = prefs.getStringSet(
             PREF_SELECTED_NETWORK_TYPES,
             setOf(NetworkType.NETWORK_4G.name, NetworkType.NETWORK_5G.name)
@@ -269,7 +269,7 @@ class StatusBarIconViewModel : ViewModel() {
 
         selectedNetworkTypes.value = currentTypes.map { NetworkType.valueOf(it) }.toSet()
 
-        context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE).edit {
+        context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE).edit {
             putStringSet(PREF_SELECTED_NETWORK_TYPES, currentTypes)
         }
     }
@@ -409,7 +409,7 @@ class StatusBarIconViewModel : ViewModel() {
     }
 
     private fun loadIconVisibilityState(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         for (icon in StatusBarIconRegistry.ALL_ICONS) {
             val visibility = prefs.getBoolean(icon.preferencesKey, icon.defaultVisible)
             iconVisibilities[icon.id]?.value = visibility
@@ -417,17 +417,17 @@ class StatusBarIconViewModel : ViewModel() {
     }
 
     private fun loadSmartWiFiPref(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         isSmartWiFiEnabled.value = prefs.getBoolean(PREF_SMART_WIFI_ENABLED, false)
     }
 
     private fun loadSmartDataPref(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         isSmartDataEnabled.value = prefs.getBoolean(PREF_SMART_DATA_ENABLED, false)
     }
 
     private fun loadSelectedNetworkTypes(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val currentTypes = prefs.getStringSet(
             PREF_SELECTED_NETWORK_TYPES,
             setOf(NetworkType.NETWORK_4G.name, NetworkType.NETWORK_5G.name)
@@ -486,7 +486,7 @@ class StatusBarIconViewModel : ViewModel() {
     }
 
     private fun loadStatusBarSettings(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         batteryPercentageMode.value = prefs.getInt(PREF_BATTERY_PERCENT_MODE, 0)
 
         // Load Clock Seconds
@@ -516,7 +516,7 @@ class StatusBarIconViewModel : ViewModel() {
 
     fun setBatteryPercentageMode(mode: Int, context: Context) {
         batteryPercentageMode.value = mode
-        context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE).edit {
+        context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE).edit {
             putInt(PREF_BATTERY_PERCENT_MODE, mode)
         }
 

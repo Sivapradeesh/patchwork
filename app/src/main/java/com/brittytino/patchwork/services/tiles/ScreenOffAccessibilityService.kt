@@ -127,7 +127,7 @@ class ScreenOffAccessibilityService : AccessibilityService(), SensorEventListene
     }
 
     private fun scheduleFreeze() {
-        val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
         val isFreezeWhenLockedEnabled = prefs.getBoolean("freeze_when_locked_enabled", false)
 
         if (isFreezeWhenLockedEnabled) {
@@ -238,7 +238,7 @@ class ScreenOffAccessibilityService : AccessibilityService(), SensorEventListene
 
         when (action) {
             "LOCK_SCREEN" -> {
-                val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
                 val hapticTypeStr =
                     prefs.getString("haptic_feedback_type", HapticFeedbackType.NONE.name)
                 val hapticType = try {
@@ -276,7 +276,7 @@ class ScreenOffAccessibilityService : AccessibilityService(), SensorEventListene
     }
 
     private fun startInputEventListenerIfEnabled() {
-        val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("button_remap_enabled", false)
         val useShizuku = prefs.getBoolean("button_remap_use_shizuku", false)
 

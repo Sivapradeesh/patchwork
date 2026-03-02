@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class LocationReachedRepository(context: Context) {
     private val prefs: SharedPreferences =
-        context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
 
     companion object {
         private val _isProcessing = MutableStateFlow(false)

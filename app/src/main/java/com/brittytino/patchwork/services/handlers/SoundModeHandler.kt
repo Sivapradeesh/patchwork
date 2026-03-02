@@ -15,7 +15,7 @@ class SoundModeHandler(private val context: Context) {
             return null
         }
 
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val defaultOrder = listOf("Sound", "Vibrate", "Silent")
         val orderString = prefs.getString("sound_mode_order", defaultOrder.joinToString(","))
             ?: defaultOrder.joinToString(",")

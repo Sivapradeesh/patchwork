@@ -38,7 +38,7 @@ class TileAuthActivity : FragmentActivity() {
                         startActivity(settingsIntent)
                     } else if (feature != null) {
                         // Toggle preference
-                        val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                        val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
                         val isEnabled = prefs.getBoolean(feature, false)
                         prefs.edit { putBoolean(feature, !isEnabled) }
                     }

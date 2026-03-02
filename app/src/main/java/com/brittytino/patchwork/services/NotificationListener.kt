@@ -75,7 +75,7 @@ class NotificationListener : NotificationListenerService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
                 val prefs = applicationContext.getSharedPreferences(
-                    "essentials_prefs",
+                    "patchwork_prefs",
                     MODE_PRIVATE
                 )
                 val discoveredJson = prefs.getString("maps_discovered_channels", null)
@@ -127,7 +127,7 @@ class NotificationListener : NotificationListenerService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
                 val prefs = applicationContext.getSharedPreferences(
-                    "essentials_prefs",
+                    "patchwork_prefs",
                     MODE_PRIVATE
                 )
                 val discoveredJson = prefs.getString("snooze_discovered_channels", null)
@@ -503,7 +503,7 @@ class NotificationListener : NotificationListenerService() {
                 lastMediaStates[sbn.packageName] = MediaState(title, artist, isPlaying, isLiked)
 
                 val prefs = applicationContext.getSharedPreferences(
-                    "essentials_prefs",
+                    "patchwork_prefs",
                     MODE_PRIVATE
                 )
                 prefs.edit()
@@ -539,7 +539,7 @@ class NotificationListener : NotificationListenerService() {
         }
 
         val prefs =
-            applicationContext.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+            applicationContext.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
 
         // Maps navigation state update
         if (sbn.packageName == "com.google.android.apps.maps") {
@@ -598,7 +598,7 @@ class NotificationListener : NotificationListenerService() {
             }
 
             val prefs =
-                applicationContext.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                applicationContext.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
 
             // Skip silent notifications if enabled
             val skipSilent = prefs.getBoolean("edge_lighting_skip_silent", true)
@@ -764,7 +764,7 @@ class NotificationListener : NotificationListenerService() {
     private fun handleCallVibrations(sbn: StatusBarNotification) {
         try {
             val prefs =
-                applicationContext.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                applicationContext.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
             if (!prefs.getBoolean(SettingsRepository.KEY_CALL_VIBRATIONS_ENABLED, false)) return
 
             val notification = sbn.notification
@@ -813,7 +813,7 @@ class NotificationListener : NotificationListenerService() {
 
     private fun handleNotificationGlance(sbn: StatusBarNotification, isPosted: Boolean) {
         try {
-            val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+            val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
             val enabled = prefs.getBoolean(SettingsRepository.KEY_NOTIFICATION_GLANCE_ENABLED, false)
             if (!enabled) {
                 if (activeGlanceNotifications.isNotEmpty()) {
@@ -852,7 +852,7 @@ class NotificationListener : NotificationListenerService() {
                 if (!enable) {
                     val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                     if (!powerManager.isInteractive) {
-                        val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                        val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
                         val forceTurnOffEnabled = prefs.getBoolean(SettingsRepository.KEY_AOD_FORCE_TURN_OFF_ENABLED, false)
                         if (forceTurnOffEnabled) {
                             sendBroadcast(Intent("FORCE_TURN_OFF_AOD").setPackage(packageName))
@@ -867,7 +867,7 @@ class NotificationListener : NotificationListenerService() {
 
     private fun isAppSelectedForNotificationGlance(packageName: String): Boolean {
         try {
-            val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+            val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
             val sameAsLighting = prefs.getBoolean(SettingsRepository.KEY_NOTIFICATION_GLANCE_SAME_AS_LIGHTING, true)
             if (sameAsLighting) {
                 return isAppSelectedForNotificationLighting(packageName)
@@ -925,7 +925,7 @@ class NotificationListener : NotificationListenerService() {
         val channelId = notification.channelId
 
         val prefs =
-            applicationContext.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+            applicationContext.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
         val detectionChannelsJson = prefs.getString("maps_detection_channels", null)
         val detectionChannels: Set<String> = if (detectionChannelsJson != null) {
             try {
@@ -968,7 +968,7 @@ class NotificationListener : NotificationListenerService() {
     private fun isAppSelectedForNotificationLighting(packageName: String): Boolean {
         try {
             val prefs =
-                applicationContext.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                applicationContext.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
 
             // Check if only show when screen off is enabled
             val onlyShowWhenScreenOff = prefs.getBoolean("edge_lighting_only_screen_off", true)
@@ -1006,7 +1006,7 @@ class NotificationListener : NotificationListenerService() {
     private fun isAppSelectedForFlashlightPulse(packageName: String): Boolean {
         try {
             val prefs =
-                applicationContext.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                applicationContext.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
 
             // If "same as lighting" toggle is ON, use notification lighting's app selection
             val sameAsLighting =

@@ -16,7 +16,7 @@ class StatusBarAutomationReceiver : BroadcastReceiver() {
     }
 
     private fun updateBatteryPercentage(context: Context, action: String) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val mode = prefs.getInt(StatusBarIconViewModel.PREF_BATTERY_PERCENT_MODE, 0)
         val isCharging = action == Intent.ACTION_POWER_CONNECTED
 

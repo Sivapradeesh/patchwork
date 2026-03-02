@@ -247,7 +247,7 @@ fun StatusBarIconSettingsUI(
                             viewModel.selectedNetworkTypes.value = selectedTypes
                             // Save to preferences
                             val prefs = context.getSharedPreferences(
-                                "essentials_prefs",
+                                "patchwork_prefs",
                                 Context.MODE_PRIVATE
                             )
                             prefs.edit {

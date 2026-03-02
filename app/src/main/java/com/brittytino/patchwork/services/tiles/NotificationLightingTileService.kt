@@ -9,7 +9,7 @@ import com.brittytino.patchwork.utils.PermissionUtils
 class NotificationLightingTileService : BaseTileService() {
 
     override fun onTileClick() {
-        val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("edge_lighting_enabled", false)
         prefs.edit { putBoolean("edge_lighting_enabled", !isEnabled) }
     }
@@ -31,7 +31,7 @@ class NotificationLightingTileService : BaseTileService() {
         Icon.createWithResource(this, R.drawable.rounded_blur_linear_24)
 
     override fun getTileState(): Int {
-        val enabled = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+        val enabled = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
             .getBoolean("edge_lighting_enabled", false)
         return if (enabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
     }

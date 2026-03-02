@@ -36,7 +36,7 @@ object FreezeManager {
      * Freeze all selected apps from settings that have auto-freeze ENABLED.
      */
     fun freezeAll(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val json = prefs.getString("freeze_selected_apps", null)
         val excludedJson = prefs.getString("freeze_auto_excluded_apps", null)
         val dontFreezeActive = prefs.getBoolean("freeze_dont_freeze_active_apps", false)
@@ -138,7 +138,7 @@ object FreezeManager {
      * Freeze EVERY app in the selection list immediately.
      */
     fun freezeAllManual(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val json = prefs.getString("freeze_selected_apps", null)
         if (json != null) {
             val gson = com.google.gson.Gson()
@@ -158,7 +158,7 @@ object FreezeManager {
      * Unfreeze all picked apps from settings that have auto-freeze ENABLED.
      */
     fun unfreezeAll(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val json = prefs.getString("freeze_selected_apps", null)
         val excludedJson = prefs.getString("freeze_auto_excluded_apps", null)
 
@@ -186,7 +186,7 @@ object FreezeManager {
      * Unfreeze all picked apps in settings, ignoring the auto-freeze toggle.
      */
     fun unfreezeAllManual(context: Context) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val json = prefs.getString("freeze_selected_apps", null)
         if (json != null) {
             val gson = com.google.gson.Gson()

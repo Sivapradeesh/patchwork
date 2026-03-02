@@ -1,4 +1,4 @@
-﻿package com.brittytino.patchwork.ime
+package com.brittytino.patchwork.ime
 
 import android.content.ClipboardManager
 import android.content.Context
@@ -76,7 +76,7 @@ class EssentialsInputMethodService : InputMethodService(), LifecycleOwner, ViewM
 
         try {
             clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-            val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+            val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
             if (prefs.getBoolean(SettingsRepository.KEY_KEYBOARD_CLIPBOARD_ENABLED, true)) {
                 clipboardManager.addPrimaryClipChangedListener(this)
                 updateClipboardHistory()
@@ -139,7 +139,7 @@ class EssentialsInputMethodService : InputMethodService(), LifecycleOwner, ViewM
             PatchworkTheme {
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val prefs =
-                    remember { context.getSharedPreferences("essentials_prefs", MODE_PRIVATE) }
+                    remember { context.getSharedPreferences("patchwork_prefs", MODE_PRIVATE) }
 
                 // State variables for settings
                 var rawKeyboardHeight by remember {

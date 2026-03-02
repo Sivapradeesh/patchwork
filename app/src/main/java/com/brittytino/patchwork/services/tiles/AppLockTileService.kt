@@ -12,7 +12,7 @@ import com.brittytino.patchwork.utils.PermissionUtils
 class AppLockTileService : BaseTileService() {
 
     override fun onTileClick() {
-        val prefs = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("app_lock_enabled", false)
 
         val intent = Intent(this, TileAuthActivity::class.java).apply {
@@ -53,7 +53,7 @@ class AppLockTileService : BaseTileService() {
         Icon.createWithResource(this, R.drawable.rounded_shield_lock_24)
 
     override fun getTileState(): Int {
-        val enabled = getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+        val enabled = getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
             .getBoolean("app_lock_enabled", false)
         return if (enabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
     }

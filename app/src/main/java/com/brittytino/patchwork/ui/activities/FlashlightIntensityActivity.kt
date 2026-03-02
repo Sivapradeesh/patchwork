@@ -1,4 +1,4 @@
-﻿package com.brittytino.patchwork.ui.activities
+package com.brittytino.patchwork.ui.activities
 
 import android.content.Context
 import android.content.Intent
@@ -93,7 +93,7 @@ class FlashlightIntensityActivity : ComponentActivity() {
 fun FlashlightIntensityOverlay(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val view = LocalView.current
-    val prefs = remember { context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE) }
+    val prefs = remember { context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE) }
 
     // Get flashlight max level
     val maxLevel = remember {

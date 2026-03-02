@@ -99,7 +99,7 @@ class NotificationLightingHandler(
 
     fun onScreenOn() {
         if (!isPreview) {
-            val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+            val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
             val onlyShowWhenScreenOff = prefs.getBoolean("edge_lighting_only_screen_off", true)
             if (onlyShowWhenScreenOff) {
                 removeOverlay()
@@ -235,7 +235,7 @@ class NotificationLightingHandler(
                     }
                 }
             } else {
-                val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+                val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
                 val onlyShowWhenScreenOff = prefs.getBoolean("edge_lighting_only_screen_off", true)
                 if (onlyShowWhenScreenOff && !ignoreScreenState && !isPreview) {
                     if (isScreenOn) {

@@ -143,7 +143,7 @@ object HapticUtil {
      * Load app haptic preference from SharedPreferences
      */
     fun loadAppHapticsEnabled(context: Context): Boolean {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         return prefs.getBoolean("app_haptics_enabled", true) // Default: enabled
     }
 
@@ -151,7 +151,7 @@ object HapticUtil {
      * Save app haptic preference to SharedPreferences
      */
     fun saveAppHapticsEnabled(context: Context, enabled: Boolean) {
-        val prefs = context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("app_haptics_enabled", enabled).apply()
         isAppHapticsEnabled.value = enabled
     }

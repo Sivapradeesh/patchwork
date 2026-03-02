@@ -53,7 +53,7 @@ class FlashlightHandler(
             super.onTorchModeChanged(cameraId, enabled)
             isTorchOn = enabled
 
-            val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+            val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
             val isGlobalEnabled = prefs.getBoolean("flashlight_global_enabled", false)
             val lastIntensity = prefs.getInt("flashlight_last_intensity", 1)
 
@@ -136,7 +136,7 @@ class FlashlightHandler(
     }
 
     private fun updateFlashlightNotification(intensity: Int) {
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("flashlight_live_update_enabled", true)) {
             cancelFlashlightNotification()
             return
@@ -323,7 +323,7 @@ class FlashlightHandler(
     fun pulseFlashlightForNotification() {
         if (isTorchOn) return
 
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val pulseEnabled = prefs.getBoolean("flashlight_pulse_enabled", false)
         if (!pulseEnabled) return
 
@@ -342,7 +342,7 @@ class FlashlightHandler(
     fun pulseFlashlightForNotificationWithCheck() {
         if (isTorchOn) return
 
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val pulseEnabled = prefs.getBoolean("flashlight_pulse_enabled", false)
         if (!pulseEnabled) return
 
@@ -436,7 +436,7 @@ class FlashlightHandler(
             currentIntensityLevel = targetLevel
             updateFlashlightNotification(targetLevel)
 
-            val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+            val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
             if (prefs.getBoolean("flashlight_global_enabled", false)) {
                 prefs.edit().putInt("flashlight_last_intensity", targetLevel).apply()
             }
@@ -464,7 +464,7 @@ class FlashlightHandler(
     }
 
     fun toggleFlashlight(overrideIntensity: Int? = null) {
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val isFadeEnabled = prefs.getBoolean("flashlight_fade_enabled", false)
 
         try {

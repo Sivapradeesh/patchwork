@@ -1,4 +1,4 @@
-﻿package com.brittytino.patchwork
+package com.brittytino.patchwork
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -120,7 +120,7 @@ class AppLockActivity : FragmentActivity() {
 
                     AsyncImage(
                         model = R.mipmap.ic_launcher_round,
-                        contentDescription = "Essentials App Icon",
+                        contentDescription = "Patchwork App Icon",
                         modifier = Modifier
                             .size(32.dp)
                             .align(Alignment.BottomEnd)

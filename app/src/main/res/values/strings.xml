@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">Patchwork</string>
     <string name="label_beta">BETA</string>
     <string name="accessibility_service_description"><b>Patchwork Accessibility Service</b>\n\nThis service is required for the following advanced features:\n\n<b>• Physical Button Remapping:</b>\nDetects volume button presses even when the screen is off to trigger actions like the Flashlight.\n\n<b>• Per-App Settings:</b>\nMonitors the currently active app to apply specific profiles for Dynamic Night Light, Notification Lighting Colors, and App Lock.\n\n<b>• Screen Control:</b>\nAllows the app to lock the screen (e.g. via Double Tap or Widgets) and detect screen state changes.\n\n<b>• Security:</b>\nPrevents unauthorized changes by detecting window content when the device is locked.\n\n<small>No input text or sensitive user data is collected or transmitted.</small></string>
@@ -545,7 +545,7 @@
     <string name="perm_battery_optimization_desc">Ensure the service is not killed by the system to save power.</string>
 
     <!-- Tabs -->
-    <string name="tab_essentials">Essentials</string>
+    <string name="tab_essentials">Patchwork</string>
     <string name="tab_freeze">Freeze</string>
     <string name="tab_freeze_title">Frozen</string>
     <string name="tab_diy">DIY</string>
@@ -992,7 +992,7 @@
     <!-- Location Reached -->
     <string name="feat_location_reached_title">Are we there yet?</string>
     <string name="feat_location_reached_desc">Destination nearby alerts</string>
-    <string name="location_reached_how_to">Open Google Maps, pick a location, and share it to Essentials.</string>
+    <string name="location_reached_how_to">Open Google Maps, pick a location, and share it to Patchwork.</string>
     <string name="location_reached_radius_title">Alert Radius: %d m</string>
     <string name="perm_location_title">Location</string>
     <string name="perm_location_desc">Used to detect arrival at your destination.</string>
@@ -1015,7 +1015,7 @@
     <string name="location_reached_dist_m">%1$d m</string>
     <string name="location_reached_dist_km">%1$.1f km</string>
     <string name="location_reached_service_title">Travel alarm active</string>
-    <string name="location_reached_service_remaining">%1$s remaining (%2$d%%)</string>
+    <string name="location_reached_service_remaining" formatted="false">%1$s remaining (%2$d%%)</string>
     <string name="location_reached_channel_name">Travel Progress</string>
     <string name="location_reached_channel_desc">Shows real-time distance to destination</string>
     <string name="location_reached_alarm_title">Destination Nearby</string>

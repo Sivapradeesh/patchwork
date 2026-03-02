@@ -38,7 +38,7 @@ class ButtonRemapHandler(
             return false
         }
 
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
         val isButtonRemapEnabled = prefs.getBoolean("button_remap_enabled", false)
         val isButtonRemapUseShizuku = prefs.getBoolean("button_remap_use_shizuku", false)
         val isAdjustEnabled = prefs.getBoolean("flashlight_adjust_intensity_enabled", false)
@@ -166,7 +166,7 @@ class ButtonRemapHandler(
         if (intent.action == InputEventListenerService.ACTION_VOLUME_LONG_PRESSED) {
             val direction = intent.getStringExtra(InputEventListenerService.EXTRA_DIRECTION)
             if (direction != null) {
-                val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+                val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
                 val isScreenOn = try {
                     (service.getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
                 } catch (e: Exception) {
@@ -229,7 +229,7 @@ class ButtonRemapHandler(
     private fun toggleMediaVolume() {
         val am = service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val currentVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+        val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
 
         if (currentVolume > 0) {
             // Mute and save current volume
@@ -280,7 +280,7 @@ class ButtonRemapHandler(
 
             if (vibrator != null) {
                 // Use default from Button Remap preference
-                val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
+                val prefs = service.getSharedPreferences("patchwork_prefs", Context.MODE_PRIVATE)
                 val typeName =
                     prefs.getString("button_remap_haptic_type", HapticFeedbackType.DOUBLE.name)
                 val type = try {

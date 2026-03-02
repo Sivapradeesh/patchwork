@@ -1,4 +1,4 @@
-﻿package com.brittytino.patchwork
+package com.brittytino.patchwork
 
 import android.os.Build
 import android.os.Bundle
@@ -161,7 +161,7 @@ class FeatureSettingsActivity : FragmentActivity() {
                     com.brittytino.patchwork.ui.state.LocalMenuStateManager provides remember { com.brittytino.patchwork.ui.state.MenuStateManager() }
                 ) {
                     val view = LocalView.current
-                    val prefs = context.getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                    val prefs = context.getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
 
                     val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         context.getSystemService(VibratorManager::class.java)?.defaultVibrator

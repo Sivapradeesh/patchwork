@@ -94,7 +94,7 @@ class InputEventListenerService : Service() {
             if (devices.isEmpty()) {
                 Log.e("InputEventListener", "No devices found")
                 // Clear prefs if no device found
-                getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+                getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
                     .edit().remove("shizuku_detected_device_path").apply()
                 return@launch
             }
@@ -105,7 +105,7 @@ class InputEventListenerService : Service() {
             Log.d("InputEventListener", "Listening on device: $devicePath")
 
             // Save detected device to prefs for UI
-            getSharedPreferences("essentials_prefs", MODE_PRIVATE)
+            getSharedPreferences("patchwork_prefs", MODE_PRIVATE)
                 .edit().putString("shizuku_detected_device_path", devicePath).apply()
 
             detector = VolumeLongPressDetector(devicePath, 500)
@@ -136,7 +136,7 @@ class InputEventListenerService : Service() {
                     } else if (event is VolumePressEvent.ShortPress) {
                         if (isTorchOn) {
                             val prefs = getSharedPreferences(
-                                "essentials_prefs",
+                                "patchwork_prefs",
                                 MODE_PRIVATE
                             )
                             val isAdjustEnabled =
@@ -177,7 +177,7 @@ class InputEventListenerService : Service() {
                             }
                         } else {
                             val prefs = getSharedPreferences(
-                                "essentials_prefs",
+                                "patchwork_prefs",
                                 MODE_PRIVATE
                             )
                             val pm =
