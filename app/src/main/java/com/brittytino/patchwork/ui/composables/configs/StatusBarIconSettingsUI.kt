@@ -4,10 +4,13 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -20,18 +23,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.compose.ui.res.stringResource
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.domain.StatusBarIconRegistry
 import com.brittytino.patchwork.ui.components.cards.IconToggleItem
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.ui.components.pickers.NetworkTypePicker
+import com.brittytino.patchwork.ui.components.pickers.SegmentedPicker
 import com.brittytino.patchwork.ui.components.sheets.PermissionItem
 import com.brittytino.patchwork.ui.components.sheets.PermissionsBottomSheet
 import com.brittytino.patchwork.ui.modifiers.highlight
@@ -46,7 +51,11 @@ fun StatusBarIconSettingsUI(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
-    val isPermissionGranted = viewModel.isWriteSecureSettingsEnabled.value
+    val isPermissionGranted =
+        viewModel.isWriteSecureSettingsEnabled.value || viewModel.isShizukuAvailable.value || viewModel.isRootAvailable.value
+    val hasWriteSettings = viewModel.isWriteSettingsEnabled.value
+    val batteryPermissionGranted =
+        isPermissionGranted || hasWriteSettings || viewModel.isShizukuAvailable.value || viewModel.isRootAvailable.value
 
     var showPermissionSheet by remember { mutableStateOf(false) }
 
@@ -100,7 +109,8 @@ fun StatusBarIconSettingsUI(
     ) {
         // Iterate through categories
         categories.forEach { categoryRes ->
-            val iconsInCat = StatusBarIconRegistry.ALL_ICONS.filter { it.categoryRes == categoryRes }
+            val iconsInCat =
+                StatusBarIconRegistry.ALL_ICONS.filter { it.categoryRes == categoryRes }
             if (iconsInCat.isNotEmpty()) {
                 Text(
                     text = stringResource(categoryRes),
@@ -115,7 +125,8 @@ fun StatusBarIconSettingsUI(
                     cornerRadius = 24.dp
                 ) {
                     iconsInCat.forEach { icon ->
-                        val isChecked = viewModel.getIconVisibility(icon.id)?.value ?: icon.defaultVisible
+                        val isChecked =
+                            viewModel.getIconVisibility(icon.id)?.value ?: icon.defaultVisible
                         IconToggleItem(
                             iconRes = icon.iconRes ?: R.drawable.rounded_info_24,
                             title = stringResource(icon.displayNameRes),
@@ -161,15 +172,15 @@ fun StatusBarIconSettingsUI(
                     .highlight(highlightSetting == "smart_data")
                     .clickable {
                         HapticUtil.performUIHaptic(view)
-                    val hasPermission = ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.READ_PHONE_STATE
-                    ) == PackageManager.PERMISSION_GRANTED
+                        val hasPermission = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.READ_PHONE_STATE
+                        ) == PackageManager.PERMISSION_GRANTED
 
-                    if (!hasPermission) {
-                        showPermissionSheet = true
+                        if (!hasPermission) {
+                            showPermissionSheet = true
+                        }
                     }
-                }
             ) {
                 IconToggleItem(
                     iconRes = R.drawable.rounded_android_cell_dual_5_bar_alert_24,
@@ -211,23 +222,25 @@ fun StatusBarIconSettingsUI(
                     ) == PackageManager.PERMISSION_GRANTED)
 
                 if (isSwitchDisabled) {
-                    Box(modifier = Modifier.matchParentSize().clickable {
-                        HapticUtil.performUIHaptic(view)
-                        val hasPermission = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.READ_PHONE_STATE
-                        ) == PackageManager.PERMISSION_GRANTED
+                    Box(modifier = Modifier
+                        .matchParentSize()
+                        .clickable {
+                            HapticUtil.performUIHaptic(view)
+                            val hasPermission = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.READ_PHONE_STATE
+                            ) == PackageManager.PERMISSION_GRANTED
 
-                        if (!hasPermission) {
-                            showPermissionSheet = true
-                        }
-                    })
+                            if (!hasPermission) {
+                                showPermissionSheet = true
+                            }
+                        })
                 }
             }
 
             // Network Type Picker (only show when Smart Data is enabled)
             if (viewModel.isSmartDataEnabled.value) {
-                Column() {
+                Column {
                     NetworkTypePicker(
                         selectedTypes = viewModel.selectedNetworkTypes.value,
                         onTypesSelected = { selectedTypes ->
@@ -246,6 +259,94 @@ fun StatusBarIconSettingsUI(
                         }
                     )
                 }
+            }
+        }
+
+        // Advanced Status Bar Settings
+        Text(
+            text = stringResource(R.string.status_bar_section_advanced),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        RoundedCardContainer(
+            modifier = Modifier,
+            spacing = 2.dp,
+            cornerRadius = 24.dp
+        ) {
+            IconToggleItem(
+                iconRes = R.drawable.rounded_nest_clock_farsight_analog_24,
+                title = stringResource(R.string.stb_clock_seconds),
+                isChecked = viewModel.isClockSecondsEnabled.value,
+                onCheckedChange = { checked ->
+                    viewModel.setClockSecondsEnabled(checked, context)
+                },
+                enabled = isPermissionGranted,
+                modifier = Modifier.highlight(highlightSetting == "clock_seconds")
+            )
+
+            IconToggleItem(
+                iconRes = R.drawable.rounded_security_24,
+                title = stringResource(R.string.stb_privacy_chip),
+                isChecked = viewModel.isPrivacyChipEnabled.value,
+                onCheckedChange = { checked ->
+                    viewModel.setPrivacyChipEnabled(checked, context)
+                },
+                enabled = isPermissionGranted,
+                modifier = Modifier.highlight(highlightSetting == "privacy_chip")
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceBright,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(MaterialTheme.shapes.extraSmall.bottomEnd)
+                    )
+                    .padding(16.dp)
+                    .highlight(highlightSetting == "battery_percentage")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.stb_battery_percentage),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (batteryPermissionGranted) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.38f
+                        )
+                    )
+                    if (!viewModel.isShizukuAvailable.value && !viewModel.isRootAvailable.value) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = stringResource(R.string.req_shizuku),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                SegmentedPicker(
+                    items = listOf(0, 1, 2), // 0: Never, 1: Always, 2: Charging
+                    selectedItem = viewModel.batteryPercentageMode.value,
+                    onItemSelected = { mode ->
+                        viewModel.setBatteryPercentageMode(mode, context)
+                    },
+                    labelProvider = { mode ->
+                        when (mode) {
+                            0 -> context.getString(R.string.stb_battery_percentage_never)
+                            1 -> context.getString(R.string.stb_battery_percentage_always)
+                            2 -> context.getString(R.string.stb_battery_percentage_charging)
+                            else -> ""
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (!batteryPermissionGranted) Modifier.alpha(0.5f) else Modifier),
+                )
             }
         }
 

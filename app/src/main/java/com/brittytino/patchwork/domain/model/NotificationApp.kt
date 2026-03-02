@@ -1,7 +1,7 @@
 package com.brittytino.patchwork.domain.model
 
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.ImageBitmap
 
 @Immutable
 data class NotificationApp(

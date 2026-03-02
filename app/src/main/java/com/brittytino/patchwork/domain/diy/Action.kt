@@ -7,11 +7,12 @@ import com.brittytino.patchwork.R
 sealed interface Action {
     @get:StringRes
     val title: Int
+
     @get:DrawableRes
     val icon: Int
-    val permissions: List<String> 
+    val permissions: List<String>
         get() = emptyList()
-    val isConfigurable: Boolean 
+    val isConfigurable: Boolean
         get() = false
 
     data object HapticVibration : Action {
@@ -23,7 +24,7 @@ sealed interface Action {
         override val title: Int = R.string.diy_action_notification
         override val icon: Int = R.drawable.rounded_notifications_unread_24
     }
-    
+
     data object RemoveNotification : Action {
         override val title: Int = R.string.diy_action_remove_notification
         override val icon: Int = R.drawable.rounded_notifications_off_24
@@ -64,5 +65,18 @@ sealed interface Action {
         override val isConfigurable: Boolean = true
     }
 
+    enum class SoundModeType {
+        SOUND, VIBRATE, SILENT
+    }
 
+    data class SoundMode(val mode: SoundModeType = SoundModeType.SOUND) : Action {
+        override val title: Int get() = R.string.diy_action_sound_mode
+        override val icon: Int get() = when (mode) {
+            SoundModeType.SOUND -> R.drawable.rounded_volume_up_24
+            SoundModeType.VIBRATE -> R.drawable.rounded_mobile_vibrate_24
+            SoundModeType.SILENT -> R.drawable.rounded_volume_off_24
+        }
+        override val permissions: List<String> = listOf("notification_policy")
+        override val isConfigurable: Boolean = true
+    }
 }

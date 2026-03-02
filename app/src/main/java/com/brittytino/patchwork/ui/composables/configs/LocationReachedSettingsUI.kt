@@ -4,10 +4,27 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -16,13 +33,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.material.loadingindicator.LoadingIndicator
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.ui.components.cards.IconToggleItem
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.viewmodels.LocationReachedViewModel
 import com.brittytino.patchwork.viewmodels.MainViewModel
-import com.brittytino.patchwork.domain.model.LocationAlarm
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -38,6 +53,13 @@ fun LocationReachedSettingsUI(
     val isProcessing by locationViewModel.isProcessingCoordinates
     val startDistance by locationViewModel.startDistance
 
+    DisposableEffect(locationViewModel) {
+        locationViewModel.startUiTracking()
+        onDispose {
+            locationViewModel.stopUiTracking()
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -48,7 +70,7 @@ fun LocationReachedSettingsUI(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LoadingIndicator()
@@ -63,23 +85,26 @@ fun LocationReachedSettingsUI(
             // Destination Set State
             RoundedCardContainer(
                 modifier = Modifier,
-                cornerRadius = 24.dp
+                cornerRadius = 28.dp
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             color = MaterialTheme.colorScheme.surfaceBright,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
                         )
-                        .padding(20.dp),
+                        .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    
+
                     if (alarm.isEnabled) {
                         // TRACKING STATE
                         val distanceText = distance?.let {
-                            if (it < 1000) stringResource(R.string.location_reached_dist_m, it.toInt()) 
+                            if (it < 1000) stringResource(
+                                R.string.location_reached_dist_m,
+                                it.toInt()
+                            )
                             else stringResource(R.string.location_reached_dist_km, it / 1000f)
                         } ?: stringResource(R.string.location_reached_calculating)
 
@@ -95,9 +120,10 @@ fun LocationReachedSettingsUI(
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
-                        
+
                         if (distance != null && startDistance > 0) {
-                            val progress = (1.0f - (distance!! / startDistance)).coerceIn(0.0f, 1.0f)
+                            val progress =
+                                (1.0f - (distance!! / startDistance)).coerceIn(0.0f, 1.0f)
                             Spacer(modifier = Modifier.height(24.dp))
 
                             LinearWavyProgressIndicator(
@@ -111,19 +137,24 @@ fun LocationReachedSettingsUI(
                                 amplitude = { 1.0f } // Normalized amplitude
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(32.dp))
-                        
+
                         Button(
                             onClick = { locationViewModel.stopTracking() },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
                             shape = androidx.compose.foundation.shape.CircleShape
                         ) {
-                            Icon(painterResource(R.drawable.rounded_pause_24), contentDescription = null)
+                            Icon(
+                                painterResource(R.drawable.rounded_pause_24),
+                                contentDescription = null
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.location_reached_stop_tracking))
                         }
@@ -133,7 +164,7 @@ fun LocationReachedSettingsUI(
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_my_location_24),
                             contentDescription = null,
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(24.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -148,26 +179,31 @@ fun LocationReachedSettingsUI(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        
+
                         Spacer(modifier = Modifier.height(32.dp))
-                        
+
                         Button(
                             onClick = { locationViewModel.startTracking() },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             shape = androidx.compose.foundation.shape.CircleShape
                         ) {
-                            Icon(painterResource(R.drawable.rounded_play_arrow_24), contentDescription = null)
+                            Icon(
+                                painterResource(R.drawable.rounded_play_arrow_24),
+                                contentDescription = null
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.location_reached_start_tracking))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // Secondary Actions
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -175,7 +211,8 @@ fun LocationReachedSettingsUI(
                     ) {
                         Button(
                             onClick = {
-                                val gmmIntentUri = Uri.parse("geo:${alarm.latitude},${alarm.longitude}")
+                                val gmmIntentUri =
+                                    Uri.parse("geo:${alarm.latitude},${alarm.longitude}")
                                 val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
                                 mapIntent.setPackage("com.google.android.apps.maps")
                                 context.startActivity(mapIntent)
@@ -184,7 +221,11 @@ fun LocationReachedSettingsUI(
                             shape = androidx.compose.foundation.shape.CircleShape,
                             colors = ButtonDefaults.filledTonalButtonColors()
                         ) {
-                            Icon(painterResource(R.drawable.rounded_map_24), contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                painterResource(R.drawable.rounded_map_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.location_reached_view_map))
                         }
@@ -195,7 +236,11 @@ fun LocationReachedSettingsUI(
                             shape = androidx.compose.foundation.shape.CircleShape,
                             colors = ButtonDefaults.filledTonalButtonColors()
                         ) {
-                            Icon(painterResource(R.drawable.rounded_delete_24), contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                painterResource(R.drawable.rounded_delete_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.location_reached_clear))
                         }
@@ -206,16 +251,18 @@ fun LocationReachedSettingsUI(
             // Empty State
             RoundedCardContainer(
                 modifier = Modifier.fillMaxWidth(),
-                cornerRadius = 24.dp
+                cornerRadius = 28.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.rounded_add_location_alt_24),
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = MaterialTheme.colorScheme.surfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -253,15 +300,21 @@ fun LocationReachedSettingsUI(
         Text(
             text = stringResource(R.string.location_reached_radius_title, alarm.radius),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, bottom = 8.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         RoundedCardContainer(
             modifier = Modifier,
-            cornerRadius = 24.dp
+            cornerRadius = 28.dp
         ) {
-            Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceBright).padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surfaceBright)
+                    .padding(16.dp)
+            ) {
                 Slider(
                     value = alarm.radius.toFloat(),
                     onValueChange = { newVal ->
@@ -272,7 +325,7 @@ fun LocationReachedSettingsUI(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
 
         val isFSIGranted by mainViewModel.isFullScreenIntentPermissionGranted
@@ -280,9 +333,9 @@ fun LocationReachedSettingsUI(
             RoundedCardContainer(
                 modifier = Modifier.background(
                     color = MaterialTheme.colorScheme.errorContainer,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
                 ),
-                cornerRadius = 24.dp
+                cornerRadius = 28.dp
             ) {
                 IconToggleItem(
                     title = stringResource(R.string.location_reached_fsi_title),

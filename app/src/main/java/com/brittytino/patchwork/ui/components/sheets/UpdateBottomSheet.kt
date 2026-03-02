@@ -14,13 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -80,19 +80,23 @@ fun UpdateBottomSheet(
                     Icon(
                         painter = painterResource(id = if (updateInfo.isUpdateAvailable) R.drawable.rounded_mobile_arrow_down_24 else R.drawable.rounded_mobile_check_24),
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = if (updateInfo.isUpdateAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                     )
 
                     Text(
-                        text = if (updateInfo.isUpdateAvailable) stringResource(R.string.update_available_title) else stringResource(R.string.status_up_to_date),
+                        text = if (updateInfo.isUpdateAvailable) stringResource(R.string.update_available_title) else stringResource(
+                            R.string.status_up_to_date
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
 
                     val isPreRelease = remember(updateInfo.versionName) {
                         val v = updateInfo.versionName.lowercase()
-                        v.contains("beta") || v.contains("alpha") || v.contains("rc") || v.contains("pre")
+                        v.contains("beta") || v.contains("alpha") || v.contains("rc") || v.contains(
+                            "pre"
+                        )
                     }
 
                     if (isPreRelease) {
@@ -109,7 +113,7 @@ fun UpdateBottomSheet(
                                     painter = painterResource(id = R.drawable.rounded_mobile_code_24),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                                 Text(
                                     text = stringResource(R.string.warning_pre_release),
@@ -127,7 +131,10 @@ fun UpdateBottomSheet(
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
-                                text = stringResource(R.string.release_notes_format, updateInfo.versionName),
+                                text = stringResource(
+                                    R.string.release_notes_format,
+                                    updateInfo.versionName
+                                ),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -151,15 +158,16 @@ fun UpdateBottomSheet(
                     if (updateInfo.releaseUrl.isNotEmpty()) {
                         OutlinedButton(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, updateInfo.releaseUrl.toUri())
+                                val intent =
+                                    Intent(Intent.ACTION_VIEW, updateInfo.releaseUrl.toUri())
                                 context.startActivity(intent)
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.rounded_globe_24),
+                                painter = painterResource(id = R.drawable.brand_github),
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.action_view_on_github))
@@ -169,7 +177,8 @@ fun UpdateBottomSheet(
                     if (updateInfo.isUpdateAvailable && updateInfo.downloadUrl.isNotEmpty()) {
                         Button(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, updateInfo.downloadUrl.toUri())
+                                val intent =
+                                    Intent(Intent.ACTION_VIEW, updateInfo.downloadUrl.toUri())
                                 context.startActivity(intent)
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -178,7 +187,7 @@ fun UpdateBottomSheet(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

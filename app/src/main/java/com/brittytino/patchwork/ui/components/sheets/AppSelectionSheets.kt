@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,8 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -34,18 +36,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import com.brittytino.patchwork.R
-import com.brittytino.patchwork.ui.components.cards.AppToggleItem
 import com.brittytino.patchwork.domain.model.AppSelection
 import com.brittytino.patchwork.domain.model.NotificationApp
+import com.brittytino.patchwork.ui.components.cards.AppToggleItem
 import com.brittytino.patchwork.utils.AppUtil
 import com.brittytino.patchwork.utils.HapticUtil
 import kotlinx.coroutines.Dispatchers
@@ -90,10 +91,14 @@ fun AppSelectionSheet(
 
                 withContext(Dispatchers.Main) {
                     selectedApps = merged
-                    initialEnabledPackageNames = merged.filter { it.isEnabled }.map { it.packageName }.toSet()
+                    initialEnabledPackageNames =
+                        merged.filter { it.isEnabled }.map { it.packageName }.toSet()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("AppSelectionSheet", context.getString(R.string.error_loading_apps, e.message ?: ""))
+                android.util.Log.e(
+                    "AppSelectionSheet",
+                    context.getString(R.string.error_loading_apps, e.message ?: "")
+                )
             } finally {
                 withContext(Dispatchers.Main) {
                     isLoadingApps = false
@@ -103,10 +108,13 @@ fun AppSelectionSheet(
     }
 
     val filteredApps = selectedApps.filter {
-        val matchesSearch = searchQuery.isEmpty() || it.appName.contains(searchQuery, ignoreCase = true)
-        val isVisible = !it.isSystemApp || showSystemApps || it.isEnabled // Always show if enabled, or if system toggle checks out
+        val matchesSearch =
+            searchQuery.isEmpty() || it.appName.contains(searchQuery, ignoreCase = true)
+        val isVisible =
+            !it.isSystemApp || showSystemApps || it.isEnabled // Always show if enabled, or if system toggle checks out
         matchesSearch && isVisible
-    }.sortedWith(compareByDescending<NotificationApp> { initialEnabledPackageNames.contains(it.packageName) }.thenBy { it.appName.lowercase() })
+    }
+        .sortedWith(compareByDescending<NotificationApp> { initialEnabledPackageNames.contains(it.packageName) }.thenBy { it.appName.lowercase() })
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -129,7 +137,7 @@ fun AppSelectionSheet(
                     text = stringResource(R.string.action_select_apps),
                     style = MaterialTheme.typography.headlineSmall
                 )
-                
+
                 androidx.compose.material3.IconButton(
                     onClick = {
                         HapticUtil.performVirtualKeyHaptic(view)
@@ -139,7 +147,9 @@ fun AppSelectionSheet(
                         }
                         selectedApps = updatedList
                         scope.launch(Dispatchers.IO) {
-                            onSaveApps(context, updatedList.map { AppSelection(it.packageName, it.isEnabled) })
+                            onSaveApps(
+                                context,
+                                updatedList.map { AppSelection(it.packageName, it.isEnabled) })
                         }
                     }
                 ) {
@@ -172,9 +182,9 @@ fun AppSelectionSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable { 
+                    .clickable {
                         HapticUtil.performVirtualKeyHaptic(view)
-                        showSystemApps = !showSystemApps 
+                        showSystemApps = !showSystemApps
                     }
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -194,9 +204,9 @@ fun AppSelectionSheet(
                 )
                 Switch(
                     checked = showSystemApps,
-                    onCheckedChange = { 
+                    onCheckedChange = {
                         HapticUtil.performVirtualKeyHaptic(view)
-                        showSystemApps = it 
+                        showSystemApps = it
                     }
                 )
             }
@@ -228,22 +238,159 @@ fun AppSelectionSheet(
                                 val updatedList = selectedApps.map {
                                     if (it.packageName == app.packageName) it.copy(isEnabled = isChecked) else it
                                 }
-                                
+
                                 // If toggled via switch, update specific app then save all
                                 updatedList.find { it.packageName == app.packageName }?.let {
                                     onAppToggle?.invoke(context, it.packageName, it.isEnabled)
                                 }
-                                
+
                                 selectedApps = updatedList
                                 scope.launch(Dispatchers.IO) {
                                     // Use updatedList here to ensure we save the new state
-                                    onSaveApps(context, updatedList.map { AppSelection(it.packageName, it.isEnabled) })
+                                    onSaveApps(
+                                        context,
+                                        updatedList.map {
+                                            AppSelection(
+                                                it.packageName,
+                                                it.isEnabled
+                                            )
+                                        })
                                 }
                             }
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SingleAppSelectionSheet(
+    onDismissRequest: () -> Unit,
+    onAppSelected: (NotificationApp) -> Unit,
+    context: Context = LocalContext.current
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val view = LocalView.current
+    var searchQuery by remember { mutableStateOf("") }
+    var apps by remember { mutableStateOf<List<NotificationApp>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        withContext(Dispatchers.IO) {
+            try {
+                // Get only user/downloaded apps
+                val installedApps = AppUtil.getInstalledApps(context).filter { !it.isSystemApp }
+                withContext(Dispatchers.Main) {
+                    apps = installedApps
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    val filteredApps = apps.filter {
+        searchQuery.isEmpty() || it.appName.contains(searchQuery, ignoreCase = true)
+    }.sortedBy { it.appName.lowercase() }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.9f)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.action_select_app),
+                style = MaterialTheme.typography.headlineSmall
+            )
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(stringResource(R.string.label_search)) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.rounded_search_24),
+                        contentDescription = stringResource(R.string.action_search)
+                    )
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            if (isLoading) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    LoadingIndicator()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(24.dp)),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    items(filteredApps, key = { it.packageName }) { app ->
+                        Surface(
+                            onClick = {
+                                HapticUtil.performVirtualKeyHaptic(view)
+                                onAppSelected(app)
+                                onDismissRequest()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surfaceContainer
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Image(
+                                    bitmap = app.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Column {
+                                    Text(
+                                        text = app.appName,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = app.packageName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

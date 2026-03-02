@@ -1,8 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.1.0-1.0.29"
 }
 
 
@@ -11,10 +9,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
-        freeCompilerArgs.add("-Xcontext-receivers")
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
-        freeCompilerArgs.add("-opt-in=kotlin.ExperimentalStdlibApi")
-        allWarningsAsErrors.set(false)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
@@ -26,56 +21,39 @@ android {
         applicationId = "com.brittytino.patchwork"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 31
+        versionName = "12.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    signingConfigs {
-        create("release") {
-            val keystoreFile = if (System.getenv("KEYSTORE_FILE_BASE64") != null) {
-                file("../release.keystore")
-            } else {
-                file("../patchwork-release.keystore")
-            }
-            
-            if (keystoreFile.exists()) {
-                storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "patchwork2026"
-                keyAlias = System.getenv("KEY_ALIAS") ?: "patchwork"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "patchwork2026"
-            }
-        }
-    }
-
     buildTypes {
+
+//        optimized dev build
+
+//          debug {
+//             isMinifyEnabled = true
+//             isShrinkResources = true
+//             isDebuggable = false
+//
+//             proguardFiles(
+//                 getDefaultProguardFile("proguard-android-optimize.txt"),
+//                 "proguard-rules.pro"
+//             )
+//          }
+
+        // end
+
+
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Use release signing if possible
-            val keystoreFile = if (System.getenv("KEYSTORE_FILE_BASE64") != null) {
-                file("../release.keystore")
-            } else {
-                file("../patchwork-release.keystore")
-            }
-            
-            if (keystoreFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
         }
     }
-    
-    lint {
-        checkReleaseBuilds = false
-        abortOnError = false
-    }
-    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -83,6 +61,11 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 
@@ -111,6 +94,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.material)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -129,14 +114,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.palette:palette:1.0.0")
 
-    // Room Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
-    
-    // Kotlin Serialization for metadata
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-
     // Reorderable library
     implementation("sh.calvin.reorderable:reorderable:3.0.0")
 
@@ -146,6 +123,9 @@ dependencies {
 
     // Google Maps & Location
     implementation(libs.play.services.location)
+    implementation(libs.play.services.wearable)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.gson)
     
     // Kotlin Reflect for dynamic sealed class serialization
     implementation(kotlin("reflect"))

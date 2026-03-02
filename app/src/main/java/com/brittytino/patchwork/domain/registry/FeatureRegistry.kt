@@ -1,20 +1,206 @@
 package com.brittytino.patchwork.domain.registry
 
 import android.content.Context
+import android.content.Intent
+import com.brittytino.patchwork.EssentialsApp
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.domain.model.Feature
 import com.brittytino.patchwork.domain.model.SearchSetting
+import com.brittytino.patchwork.ui.activities.WatermarkActivity
 import com.brittytino.patchwork.utils.ShellUtils
 import com.brittytino.patchwork.viewmodels.MainViewModel
 
 object FeatureRegistry {
     val ALL_FEATURES = listOf(
+        // Sound Group Children
+        object : Feature(
+            id = "Sound mode tile",
+            title = R.string.feat_sound_modes_title, // Renamed
+            iconRes = R.drawable.rounded_volume_up_24,
+            category = R.string.cat_system,
+            description = R.string.feat_sound_modes_desc,
+            aboutDescription = R.string.about_desc_sound_mode_tile,
+            permissionKeys = listOf("NOTIFICATION_POLICY"),
+            searchableSettings = listOf(
+                SearchSetting(
+                    R.string.search_sound_mode_show_slider_title,
+                    R.string.search_sound_mode_show_slider_desc,
+                    "sound_mode_show_slider"
+                ),
+                SearchSetting(
+                    R.string.search_sound_mode_behavior_title,
+                    R.string.search_sound_mode_behavior_desc,
+                    "sound_mode_cycle_behavior"
+                )
+            ),
+            showToggle = false,
+            parentFeatureId = "Sound"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "Ambient music glance",
+            title = R.string.feat_ambient_music_title,
+            iconRes = R.drawable.rounded_music_note_24,
+            category = R.string.cat_interface,
+            description = R.string.feat_ambient_music_desc,
+            aboutDescription = R.string.about_desc_ambient_music_glance,
+            permissionKeys = listOf("ACCESSIBILITY", "NOTIFICATION_LISTENER"),
+            showToggle = true,
+            isBeta = true,
+            parentFeatureId = "Sound"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isAmbientMusicGlanceEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isNotificationListenerEnabled.value && viewModel.isAccessibilityEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setAmbientMusicGlanceEnabled(enabled)
+        },
+
+        object : Feature(
+            id = "Call vibrations",
+            title = R.string.feat_call_vibrations_title,
+            iconRes = R.drawable.rounded_mobile_vibrate_24,
+            category = R.string.cat_system,
+            description = R.string.feat_call_vibrations_desc,
+            aboutDescription = R.string.about_desc_call_vibrations,
+            permissionKeys = listOf("READ_PHONE_STATE", "NOTIFICATION_LISTENER"),
+            hasMoreSettings = false,
+            parentFeatureId = "Sound"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isCallVibrationsEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isReadPhoneStateEnabled.value && viewModel.isNotificationListenerEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setCallVibrationsEnabled(enabled)
+
+            override fun onClick(context: Context, viewModel: MainViewModel) {}
+        },
+        object : Feature(
+            id = "Sound",
+            title = R.string.feat_sound_haptics_title,
+            iconRes = R.drawable.rounded_mobile_sound_24,
+            category = R.string.cat_system,
+            description = R.string.feat_sound_haptics_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Security",
+            title = R.string.feat_security_privacy_title,
+            iconRes = R.drawable.rounded_security_24,
+            category = R.string.cat_system,
+            description = R.string.feat_security_privacy_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Notifications",
+            title = R.string.feat_notifications_alerts_title,
+            iconRes = R.drawable.rounded_notification_sound_24,
+            category = R.string.cat_system,
+            description = R.string.feat_notifications_alerts_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Input",
+            title = R.string.feat_input_actions_title,
+            iconRes = R.drawable.rounded_mobile_hand_24,
+            category = R.string.cat_interaction,
+            description = R.string.feat_input_actions_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Widgets",
+            title = R.string.feat_widgets_title,
+            iconRes = R.drawable.rounded_widgets_24,
+            category = R.string.cat_interface,
+            description = R.string.feat_widgets_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Display",
+            title = R.string.feat_display_visuals_title,
+            iconRes = R.drawable.rounded_mobile_layout_24,
+            category = R.string.cat_interface,
+            description = R.string.feat_display_visuals_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Always on Display",
+            title = R.string.feat_always_on_display_title,
+            iconRes = R.drawable.rounded_mobile_text_2_24,
+            category = R.string.cat_interface,
+            description = R.string.feat_always_on_display_desc,
+            aboutDescription = R.string.about_desc_aod,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = true,
+            parentFeatureId = "Display"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = viewModel.isAodEnabled.value
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {
+                viewModel.setAodEnabled(enabled)
+            }
+        },
+
+
+        object : Feature(
+            id = "Text and animations",
+            title = R.string.feat_text_animations_title,
+            iconRes = R.drawable.rounded_mobile_text_24,
+            category = R.string.cat_interface,
+            description = R.string.feat_text_animations_desc,
+            aboutDescription = R.string.about_desc_text_animations,
+            permissionKeys = listOf("WRITE_SETTINGS", "WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            parentFeatureId = "Display"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Watch",
+            title = R.string.feat_watch_title,
+            iconRes = R.drawable.rounded_watch_24,
+            category = R.string.cat_tools,
+            description = R.string.feat_watch_desc,
+            showToggle = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
         object : Feature(
             id = "Screen off widget",
             title = R.string.feat_screen_off_widget_title,
-            iconRes = R.drawable.rounded_settings_power_24,
-            category = R.string.cat_tools,
+            iconRes = R.drawable.rounded_widgets_24,
+            category = R.string.cat_interface,
             description = R.string.feat_screen_off_widget_desc,
+            aboutDescription = R.string.about_desc_screen_off_widget,
             permissionKeys = listOf("ACCESSIBILITY"),
             searchableSettings = listOf(
                 SearchSetting(
@@ -24,7 +210,9 @@ object FeatureRegistry {
                     R.array.keywords_haptic
                 )
             ),
-            showToggle = false
+
+            showToggle = false,
+            parentFeatureId = "Widgets"
         ) {
             override fun isEnabled(viewModel: MainViewModel) = true
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
@@ -33,10 +221,11 @@ object FeatureRegistry {
         object : Feature(
             id = "Statusbar icons",
             title = R.string.feat_statusbar_icons_title,
-            iconRes = R.drawable.rounded_interests_24,
-            category = R.string.cat_visuals,
+            iconRes = R.drawable.rounded_signal_cellular_alt_24, // Use requested icon
+            category = R.string.cat_system,
             description = R.string.feat_statusbar_icons_desc,
-            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            aboutDescription = R.string.about_desc_statusbar_icons,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS", "WRITE_SETTINGS"),
             searchableSettings = listOf(
                 SearchSetting(
                     R.string.search_smart_wifi_title,
@@ -55,12 +244,34 @@ object FeatureRegistry {
                     R.string.search_reset_icons_desc,
                     "reset_icons",
                     R.array.keywords_restore_default
+                ),
+                SearchSetting(
+                    R.string.search_clock_seconds_title,
+                    R.string.search_clock_seconds_desc,
+                    "clock_seconds"
+                ),
+                SearchSetting(
+                    R.string.search_battery_percentage_title,
+                    R.string.search_battery_percentage_desc,
+                    "battery_percentage"
+                ),
+                SearchSetting(
+                    R.string.search_privacy_chip_title,
+                    R.string.search_privacy_chip_desc,
+                    "privacy_chip"
                 )
-            )
+            ),
+            showToggle = false,
+            parentFeatureId = "Display"
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isStatusBarIconControlEnabled.value
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isWriteSecureSettingsEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setStatusBarIconControlEnabled(enabled, context)
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isStatusBarIconControlEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isWriteSecureSettingsEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setStatusBarIconControlEnabled(enabled, context)
         },
 
         object : Feature(
@@ -69,6 +280,7 @@ object FeatureRegistry {
             iconRes = R.drawable.rounded_coffee_24,
             category = R.string.cat_tools,
             description = R.string.feat_caffeinate_desc,
+            aboutDescription = R.string.about_desc_caffeinate,
             permissionKeys = listOf("POST_NOTIFICATIONS"),
             searchableSettings = listOf(
                 SearchSetting(
@@ -76,11 +288,15 @@ object FeatureRegistry {
                     description = R.string.search_caffeinate_abort_screen_off_desc,
                     targetSettingHighlightKey = "abort_screen_off"
                 )
-            )
+            ),
+            showToggle = true,
+            parentFeatureId = "Display"
         ) {
             override fun isEnabled(viewModel: MainViewModel) = viewModel.isCaffeinateActive.value
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {
-                if (enabled) viewModel.startCaffeinate(context) else viewModel.stopCaffeinate(context)
+                if (enabled) viewModel.startCaffeinate(context) else viewModel.stopCaffeinate(
+                    context
+                )
             }
         },
 
@@ -90,13 +306,22 @@ object FeatureRegistry {
             iconRes = R.drawable.rounded_navigation_24,
             category = R.string.cat_tools,
             description = R.string.feat_maps_power_saving_desc,
-            permissionKeys = if (ShellUtils.isRootEnabled(com.brittytino.patchwork.PatchworkApp.context)) listOf("ROOT", "NOTIFICATION_LISTENER") else listOf("SHIZUKU", "NOTIFICATION_LISTENER"),
+            aboutDescription = R.string.about_desc_maps_power_saving,
+            permissionKeys = if (ShellUtils.isRootEnabled(EssentialsApp.context)) listOf(
+                "ROOT",
+                "NOTIFICATION_LISTENER"
+            ) else listOf("SHIZUKU", "NOTIFICATION_LISTENER"),
             hasMoreSettings = false
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isMapsPowerSavingEnabled.value
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isMapsPowerSavingEnabled.value
+
             override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
-                com.brittytino.patchwork.utils.ShellUtils.hasPermission(context) && viewModel.isNotificationListenerEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setMapsPowerSavingEnabled(enabled, context)
+                ShellUtils.hasPermission(context) && viewModel.isNotificationListenerEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setMapsPowerSavingEnabled(enabled, context)
+
             override fun onClick(context: Context, viewModel: MainViewModel) {}
         },
 
@@ -104,9 +329,10 @@ object FeatureRegistry {
             id = "Notification lighting",
             title = R.string.feat_notification_lighting_title,
             iconRes = R.drawable.rounded_magnify_fullscreen_24,
-            category = R.string.cat_visuals,
+            category = R.string.cat_interface,
             description = R.string.feat_notification_lighting_desc,
             permissionKeys = listOf("DRAW_OVERLAYS", "ACCESSIBILITY", "NOTIFICATION_LISTENER"),
+            aboutDescription = R.string.about_desc_notification_lighting,
             searchableSettings = listOf(
                 SearchSetting(
                     R.string.search_lighting_style_title,
@@ -125,7 +351,30 @@ object FeatureRegistry {
                     R.string.search_skip_silent_desc,
                     "skip_silent_notifications",
                     R.array.keywords_quiet_filter
-                ),
+                )
+            ),
+            showToggle = true,
+            parentFeatureId = "Notifications"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isNotificationLightingEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isOverlayPermissionGranted.value && viewModel.isNotificationLightingAccessibilityEnabled.value && viewModel.isNotificationListenerEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setNotificationLightingEnabled(enabled, context)
+        },
+
+        object : Feature(
+            id = "Flashlight pulse",
+            title = R.string.flashlight_pulse_title,
+            iconRes = R.drawable.rounded_flashlight_on_24,
+            category = R.string.cat_system,
+            description = R.string.feat_flashlight_pulse_desc,
+            aboutDescription = R.string.about_desc_flashlight_pulse,
+            permissionKeys = listOf("NOTIFICATION_LISTENER"),
+            searchableSettings = listOf(
                 SearchSetting(
                     R.string.search_flashlight_pulse_title,
                     R.string.search_flashlight_pulse_desc,
@@ -138,36 +387,29 @@ object FeatureRegistry {
                     "flashlight_pulse_facedown",
                     R.array.keywords_proximity_sensor
                 )
-            )
+            ),
+            showToggle = true,
+            parentFeatureId = "Notifications"
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isNotificationLightingEnabled.value
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isFlashlightPulseEnabled.value
+
             override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
-                viewModel.isOverlayPermissionGranted.value && viewModel.isNotificationLightingAccessibilityEnabled.value && viewModel.isNotificationListenerEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setNotificationLightingEnabled(enabled, context)
-        },
+                viewModel.isNotificationListenerEnabled.value
 
-        object : Feature(
-            id = "Sound mode tile",
-            title = R.string.feat_sound_mode_tile_title,
-            iconRes = R.drawable.rounded_volume_up_24,
-            category = R.string.cat_tools,
-            description = R.string.feat_sound_mode_tile_desc,
-            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
-            showToggle = false
-        ) {
-            override fun isEnabled(viewModel: MainViewModel) = true
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setFlashlightPulseEnabled(enabled, context)
         },
-
 
 
         object : Feature(
             id = "Link actions",
             title = R.string.feat_link_actions_title,
             iconRes = R.drawable.rounded_link_24,
-            category = R.string.cat_tools,
+            category = R.string.cat_interaction,
             description = R.string.feat_link_actions_desc,
-            showToggle = false
+            showToggle = false,
+            parentFeatureId = "Input"
         ) {
             override fun isEnabled(viewModel: MainViewModel) = false
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
@@ -177,15 +419,45 @@ object FeatureRegistry {
             id = "Snooze system notifications",
             title = R.string.feat_snooze_notifications_title,
             iconRes = R.drawable.rounded_snooze_24,
-            category = R.string.cat_tools,
+            category = R.string.cat_interface,
             description = R.string.feat_snooze_notifications_desc,
+            aboutDescription = R.string.about_desc_snooze_notifications,
             permissionKeys = listOf("NOTIFICATION_LISTENER"),
-            showToggle = false,
-            searchableSettings = emptyList()
+            showToggle = true,
+            searchableSettings = emptyList(),
+            parentFeatureId = "Notifications"
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = false
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isNotificationListenerEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isSnoozeHeadsUpEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isNotificationListenerEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setSnoozeHeadsUpEnabled(
+                    enabled,
+                    context = context
+                )
+        },
+        object : Feature(
+            id = "Battery notification",
+            title = R.string.feat_battery_notification_title,
+            iconRes = R.drawable.rounded_battery_charging_60_24,
+            category = R.string.cat_system,
+            description = R.string.feat_battery_notification_desc,
+            aboutDescription = R.string.about_desc_battery_notification,
+            permissionKeys = listOf("POST_NOTIFICATIONS", "BLUETOOTH_CONNECT", "BLUETOOTH_SCAN"),
+            showToggle = true,
+            parentFeatureId = "Notifications"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isBatteryNotificationEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isPostNotificationsEnabled.value && viewModel.isBluetoothPermissionGranted.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setBatteryNotificationEnabled(enabled, context)
         },
 
         object : Feature(
@@ -194,6 +466,8 @@ object FeatureRegistry {
             iconRes = R.drawable.rounded_tile_small_24,
             category = R.string.cat_system,
             description = R.string.feat_qs_tiles_desc,
+            aboutDescription = R.string.about_desc_quick_settings_tiles,
+            permissionKeys = listOf("WRITE_SETTINGS"),
             showToggle = false,
             searchableSettings = listOf(
                 SearchSetting(
@@ -309,6 +583,13 @@ object FeatureRegistry {
                     R.string.feat_qs_tiles_title
                 ),
                 SearchSetting(
+                    R.string.tile_charge_optimization,
+                    R.string.about_desc_charge_optimization,
+                    "Charge optimization",
+                    R.array.keywords_battery,
+                    R.string.feat_qs_tiles_title
+                ),
+                SearchSetting(
                     R.string.search_qs_usb_debugging_title,
                     R.string.search_qs_usb_debugging_desc,
                     "USB Debugging",
@@ -325,10 +606,14 @@ object FeatureRegistry {
             id = "Button remap",
             title = R.string.feat_button_remap_title,
             iconRes = R.drawable.rounded_switch_access_3_24,
-            category = R.string.cat_system,
+            category = R.string.cat_interaction,
             description = R.string.feat_button_remap_desc,
-            permissionKeys = if (ShellUtils.isRootEnabled(com.brittytino.patchwork.PatchworkApp.context)) listOf("ACCESSIBILITY", "ROOT") else listOf("ACCESSIBILITY", "SHIZUKU"),
-            showToggle = false,
+            aboutDescription = R.string.about_desc_button_remap,
+            permissionKeys = if (ShellUtils.isRootEnabled(EssentialsApp.context)) listOf(
+                "ACCESSIBILITY",
+                "ROOT"
+            ) else listOf("ACCESSIBILITY", "SHIZUKU"),
+            showToggle = true,
             searchableSettings = listOf(
                 SearchSetting(
                     R.string.search_remap_enable_title,
@@ -348,19 +633,24 @@ object FeatureRegistry {
                     "flashlight_toggle",
                     R.array.keywords_flashlight
                 )
-            )
+            ),
+            parentFeatureId = "Input"
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = true
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isAccessibilityEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setButtonRemapEnabled(enabled, context)
+            override fun isEnabled(viewModel: MainViewModel) = viewModel.isButtonRemapEnabled.value
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isAccessibilityEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setButtonRemapEnabled(enabled, context)
         },
 
         object : Feature(
             id = "Dynamic night light",
             title = R.string.feat_dynamic_night_light_title,
             iconRes = R.drawable.rounded_nightlight_24,
-            category = R.string.cat_visuals,
+            category = R.string.cat_display,
             description = R.string.feat_dynamic_night_light_desc,
+            aboutDescription = R.string.about_desc_dynamic_night_light,
             permissionKeys = listOf("ACCESSIBILITY", "WRITE_SECURE_SETTINGS"),
             searchableSettings = listOf(
                 SearchSetting(
@@ -369,34 +659,47 @@ object FeatureRegistry {
                     "dynamic_night_light_toggle",
                     R.array.keywords_switch_master
                 )
-            )
+            ),
+            showToggle = true,
+            parentFeatureId = "Display"
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isDynamicNightLightEnabled.value
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isDynamicNightLightEnabled.value
+
             override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
                 viewModel.isAccessibilityEnabled.value && viewModel.isWriteSecureSettingsEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setDynamicNightLightEnabled(enabled, context)
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setDynamicNightLightEnabled(enabled, context)
         },
 
         object : Feature(
             id = "Screen locked security",
             title = R.string.feat_screen_locked_security_title,
             iconRes = R.drawable.rounded_security_24,
-            category = R.string.cat_security,
+            category = R.string.cat_protection,
             description = R.string.feat_screen_locked_security_desc,
-            permissionKeys = listOf("ACCESSIBILITY", "WRITE_SECURE_SETTINGS", "DEVICE_ADMIN")
+            aboutDescription = R.string.about_desc_screen_locked_security,
+            permissionKeys = listOf("ACCESSIBILITY", "WRITE_SECURE_SETTINGS", "DEVICE_ADMIN"),
+            parentFeatureId = "Security"
         ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isScreenLockedSecurityEnabled.value
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isScreenLockedSecurityEnabled.value
+
             override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
                 viewModel.isAccessibilityEnabled.value && viewModel.isWriteSecureSettingsEnabled.value && viewModel.isDeviceAdminEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setScreenLockedSecurityEnabled(enabled, context)
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setScreenLockedSecurityEnabled(enabled, context)
         },
 
         object : Feature(
             id = "App lock",
             title = R.string.feat_app_lock_title,
-            iconRes = R.drawable.rounded_shield_lock_24,
-            category = R.string.cat_security,
+            iconRes = R.drawable.rounded_apps_24,
+            category = R.string.cat_protection,
             description = R.string.feat_app_lock_desc,
+            aboutDescription = R.string.about_desc_app_lock,
             permissionKeys = listOf("ACCESSIBILITY"),
             searchableSettings = listOf(
                 SearchSetting(
@@ -411,11 +714,15 @@ object FeatureRegistry {
                     "app_lock_selected_apps",
                     R.array.keywords_selection
                 )
-            )
+            ),
+            parentFeatureId = "Security"
         ) {
             override fun isEnabled(viewModel: MainViewModel) = viewModel.isAppLockEnabled.value
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isAccessibilityEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setAppLockEnabled(enabled, context)
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isAccessibilityEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setAppLockEnabled(enabled, context)
         },
 
         object : Feature(
@@ -424,6 +731,7 @@ object FeatureRegistry {
             iconRes = R.drawable.rounded_navigation_24,
             category = R.string.cat_tools,
             description = R.string.feat_location_reached_desc,
+            aboutDescription = R.string.about_desc_location_reached,
             permissionKeys = listOf("LOCATION", "BACKGROUND_LOCATION", "USE_FULL_SCREEN_INTENT"),
             showToggle = false
         ) {
@@ -437,7 +745,12 @@ object FeatureRegistry {
             iconRes = R.drawable.rounded_mode_cool_24,
             category = R.string.cat_tools,
             description = R.string.feat_freeze_desc,
-            permissionKeys = if (ShellUtils.isRootEnabled(com.brittytino.patchwork.PatchworkApp.context)) listOf("ROOT") else listOf("SHIZUKU"),
+            aboutDescription = R.string.about_desc_freeze,
+            permissionKeys = if (ShellUtils.isRootEnabled(EssentialsApp.context)) listOf(
+                "ROOT",
+                "USAGE_STATS",
+                "NOTIFICATION_LISTENER"
+            ) else listOf("SHIZUKU", "USAGE_STATS", "NOTIFICATION_LISTENER"),
             searchableSettings = listOf(
                 SearchSetting(
                     R.string.search_freeze_pick_title,
@@ -463,13 +776,14 @@ object FeatureRegistry {
                     "freeze_lock_delay_index",
                     R.array.keywords_timer
                 )
-            )
-,
-            showToggle = false
+            ),
+            showToggle = false,
+            isVisibleInMain = false
         ) {
             override fun isEnabled(viewModel: MainViewModel) = true
             override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
-                com.brittytino.patchwork.utils.ShellUtils.hasPermission(context)
+                ShellUtils.hasPermission(context)
+
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
         },
 
@@ -479,6 +793,7 @@ object FeatureRegistry {
             iconRes = R.drawable.rounded_keyboard_24,
             category = R.string.cat_system,
             description = R.string.feat_system_keyboard_desc,
+            aboutDescription = R.string.about_desc_system_keyboard,
             hasMoreSettings = true,
             showToggle = false,
             searchableSettings = listOf(
@@ -500,7 +815,8 @@ object FeatureRegistry {
                     "keyboard_haptics",
                     R.array.keywords_vibration
                 )
-            )
+            ),
+            parentFeatureId = "Input"
         ) {
             override fun isEnabled(viewModel: MainViewModel) = true
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
@@ -510,97 +826,210 @@ object FeatureRegistry {
             id = "Batteries",
             title = R.string.feat_batteries_title,
             iconRes = R.drawable.rounded_battery_charging_60_24,
+            // "Batteries"
             category = R.string.cat_tools,
             description = R.string.feat_batteries_desc,
+            aboutDescription = R.string.about_desc_batteries,
             permissionKeys = listOf("BLUETOOTH_CONNECT", "BLUETOOTH_SCAN"),
             showToggle = false,
-            hasMoreSettings = true
+            hasMoreSettings = true,
+            isBeta = true,
+            parentFeatureId = "Widgets"
         ) {
             override fun isEnabled(viewModel: MainViewModel) = true
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
         },
 
         object : Feature(
-            id = "App Behavior Controller",
-            title = R.string.feat_app_behavior_title,
-            iconRes = R.drawable.rounded_settings_accessibility_24,
-            category = R.string.cat_tools,
-            description = R.string.feat_app_behavior_desc,
-            permissionKeys = listOf("ACCESSIBILITY"),
-            showToggle = true
-        ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isAppBehaviorControllerEnabled.value
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isAccessibilityEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setAppBehaviorControllerEnabled(enabled, context)
-        },
-
-        object : Feature(
-            id = "Smart App Cooldown",
-            title = R.string.feat_app_cooldown_title,
-            iconRes = R.drawable.rounded_timer_24,
-            category = R.string.cat_tools,
-            description = R.string.feat_app_cooldown_desc,
-            permissionKeys = listOf("ACCESSIBILITY", "DRAW_OVERLAYS"),
-            showToggle = true
-        ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isSmartAppCooldownEnabled.value
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isAccessibilityEnabled.value && viewModel.isOverlayPermissionGranted.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setSmartAppCooldownEnabled(enabled, context)
-        },
-
-        object : Feature(
-            id = "Idle App Auto-Action",
-            title = R.string.feat_idle_app_title,
-            iconRes = R.drawable.rounded_av_timer_24,
-            category = R.string.cat_tools,
-            description = R.string.feat_idle_app_desc,
-            permissionKeys = listOf("USAGE_STATS"),
-            showToggle = true
-        ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isIdleAppAutoActionEnabled.value
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isUsageStatsPermissionGranted.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setIdleAppAutoActionEnabled(enabled, context)
-        },
-
-        object : Feature(
-            id = "Action History Timeline",
-            title = R.string.feat_action_history_title,
-            iconRes = R.drawable.rounded_fiber_smart_record_24,
-            category = R.string.cat_tools,
-            description = R.string.feat_action_history_desc,
-            showToggle = true
-        ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isActionHistoryEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setActionHistoryEnabled(enabled, context)
-        },
-
-        object : Feature(
-            id = "System State Snapshots",
-            title = R.string.feat_system_snapshots_title,
-            iconRes = R.drawable.rounded_save_24,
-            category = R.string.cat_tools,
-            description = R.string.feat_system_snapshots_desc,
-            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
-            showToggle = true
-        ) {
-            override fun isEnabled(viewModel: MainViewModel) = viewModel.isSystemSnapshotsEnabled.value
-            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) = viewModel.isWriteSecureSettingsEnabled.value
-            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) = viewModel.setSystemSnapshotsEnabled(enabled, context)
-        },
-
-        object : Feature(
-            id = "Watermarks",
+            id = "Watermark",
             title = R.string.feat_watermark_title,
             iconRes = R.drawable.rounded_draw_24,
             category = R.string.cat_tools,
             description = R.string.feat_watermark_desc,
+            aboutDescription = R.string.about_desc_watermark,
             showToggle = false
         ) {
             override fun isEnabled(viewModel: MainViewModel) = true
             override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
             override fun onClick(context: Context, viewModel: MainViewModel) {
-                context.startActivity(android.content.Intent(context, com.brittytino.patchwork.ui.composables.watermark.WatermarkActivity::class.java))
+                context.startActivity(Intent(context, WatermarkActivity::class.java))
             }
+        },
+
+        object : Feature(
+            id = "Calendar Sync",
+            title = R.string.feat_calendar_sync_title,
+            iconRes = R.drawable.rounded_sync_24, // Use sync icon
+            category = R.string.cat_tools,
+            description = R.string.feat_calendar_sync_desc,
+            aboutDescription = R.string.about_desc_calendar_sync,
+            permissionKeys = listOf("READ_CALENDAR"),
+            parentFeatureId = "Watch"
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = viewModel.isCalendarSyncEnabled.value
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setCalendarSyncEnabled(enabled, context)
+        },
+
+
+        object : Feature(
+            id = "Ambient music glance",
+            title = R.string.feat_ambient_music_glance_title,
+            iconRes = R.drawable.rounded_music_video_24,
+            category = R.string.cat_visuals,
+            description = R.string.feat_ambient_music_glance_desc,
+            permissionKeys = listOf("ACCESSIBILITY", "NOTIFICATION_LISTENER"),
+            hasMoreSettings = true,
+            showToggle = true,
+            isBeta = true,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) =
+                viewModel.isAmbientMusicGlanceEnabled.value
+
+            override fun isToggleEnabled(viewModel: MainViewModel, context: Context) =
+                viewModel.isNotificationListenerEnabled.value && viewModel.isAccessibilityEnabled.value
+
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) =
+                viewModel.setAmbientMusicGlanceEnabled(enabled)
+        },
+
+        object : Feature(
+            id = "App updates",
+            title = R.string.feat_app_updates_title,
+            iconRes = R.drawable.rounded_downloading_24,
+            category = R.string.cat_tools,
+            description = R.string.feat_app_updates_desc,
+            aboutDescription = R.string.about_desc_app_updates,
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = true
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+            override fun onClick(context: Context, viewModel: MainViewModel) {
+                context.startActivity(
+                    Intent(
+                        context,
+                        com.brittytino.patchwork.AppUpdatesActivity::class.java
+                    )
+                )
+            }
+        },
+
+        // QS specific features for permission tracking
+        object : Feature(
+            id = "UI Blur tile",
+            title = R.string.tile_ui_blur,
+            iconRes = R.drawable.rounded_blur_on_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "AOD tile",
+            title = R.string.tile_aod,
+            iconRes = R.drawable.rounded_mobile_text_2_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "Mono Audio tile",
+            title = R.string.tile_mono_audio,
+            iconRes = R.drawable.rounded_headphones_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            permissionKeys = if (ShellUtils.isRootEnabled(EssentialsApp.context)) listOf("ROOT") else listOf(
+                "SHIZUKU"
+            ),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "Adaptive Brightness tile",
+            title = R.string.tile_adaptive_brightness,
+            iconRes = R.drawable.rounded_brightness_auto_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            permissionKeys = listOf("WRITE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "Private DNS tile",
+            title = R.string.tile_private_dns,
+            iconRes = R.drawable.rounded_dns_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "USB Debugging tile",
+            title = R.string.tile_usb_debugging,
+            iconRes = R.drawable.rounded_adb_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+
+        object : Feature(
+            id = "Developer Options tile",
+            title = R.string.tile_developer_options,
+            iconRes = R.drawable.rounded_mobile_code_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            aboutDescription = R.string.about_desc_developer_options,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
+        },
+        object : Feature(
+            id = "Charge optimization tile",
+            title = R.string.tile_charge_optimization,
+            iconRes = R.drawable.rounded_battery_android_frame_shield_24,
+            category = R.string.cat_system,
+            description = R.string.feat_qs_tiles_desc,
+            aboutDescription = R.string.about_desc_charge_optimization,
+            permissionKeys = listOf("WRITE_SECURE_SETTINGS"),
+            showToggle = false,
+            isVisibleInMain = false
+        ) {
+            override fun isEnabled(viewModel: MainViewModel) = false
+            override fun onToggle(viewModel: MainViewModel, context: Context, enabled: Boolean) {}
         }
     )
 }

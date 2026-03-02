@@ -2,18 +2,13 @@ package com.brittytino.patchwork.ui.composables.configs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,21 +16,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.brittytino.patchwork.R
-import com.brittytino.patchwork.domain.model.NotificationApp
-import com.brittytino.patchwork.domain.model.AppSelection
-import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.ui.components.cards.IconToggleItem
-import com.brittytino.patchwork.utils.AppUtil
-import com.brittytino.patchwork.viewmodels.MainViewModel
-import com.brittytino.patchwork.utils.HapticUtil
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.ui.components.sheets.AppSelectionSheet
 import com.brittytino.patchwork.ui.modifiers.highlight
+import com.brittytino.patchwork.utils.HapticUtil
+import com.brittytino.patchwork.viewmodels.MainViewModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -92,8 +81,19 @@ fun DynamicNightLightSettingsUI(
             AppSelectionSheet(
                 onDismissRequest = { showAppSelectionSheet = false },
                 onLoadApps = { viewModel.loadDynamicNightLightSelectedApps(it) },
-                onSaveApps = { ctx, apps -> viewModel.saveDynamicNightLightSelectedApps(ctx, apps) },
-                onAppToggle = { ctx, pkg, enabled -> viewModel.updateDynamicNightLightAppEnabled(ctx, pkg, enabled) },
+                onSaveApps = { ctx, apps ->
+                    viewModel.saveDynamicNightLightSelectedApps(
+                        ctx,
+                        apps
+                    )
+                },
+                onAppToggle = { ctx, pkg, enabled ->
+                    viewModel.updateDynamicNightLightAppEnabled(
+                        ctx,
+                        pkg,
+                        enabled
+                    )
+                },
                 context = context
             )
         }

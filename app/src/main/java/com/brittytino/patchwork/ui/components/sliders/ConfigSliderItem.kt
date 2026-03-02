@@ -3,10 +3,8 @@ package com.brittytino.patchwork.ui.components.sliders
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,7 +30,8 @@ fun ConfigSliderItem(
     steps: Int = 0,
     increment: Float = 0.1f,
     valueFormatter: (Float) -> String = { "%.0f".format(it) },
-    onValueChangeFinished: (() -> Unit)? = null
+    onValueChangeFinished: (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
     Column(
         modifier = modifier
@@ -46,7 +45,7 @@ fun ConfigSliderItem(
         Text(
             text = "$title: ${valueFormatter(value)}",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -61,7 +60,8 @@ fun ConfigSliderItem(
                     onValueChange(newValue.coerceIn(valueRange))
                     onValueChangeFinished?.invoke()
                 },
-                modifier = Modifier.padding(end = 4.dp)
+                modifier = Modifier.padding(end = 4.dp),
+                enabled = enabled
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.rounded_remove_24),
@@ -76,7 +76,8 @@ fun ConfigSliderItem(
                 valueRange = valueRange,
                 steps = steps,
                 onValueChangeFinished = onValueChangeFinished,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = enabled
             )
 
             IconButton(
@@ -88,7 +89,8 @@ fun ConfigSliderItem(
                     onValueChange(newValue.coerceIn(valueRange))
                     onValueChangeFinished?.invoke()
                 },
-                modifier = Modifier.padding(start = 4.dp)
+                modifier = Modifier.padding(start = 4.dp),
+                enabled = enabled
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.rounded_add_24),

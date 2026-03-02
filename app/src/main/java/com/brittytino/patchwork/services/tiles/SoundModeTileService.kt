@@ -12,7 +12,6 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.services.handlers.SoundModeHandler
-import com.brittytino.patchwork.utils.HapticUtil
 
 class SoundModeTileService : TileService() {
 

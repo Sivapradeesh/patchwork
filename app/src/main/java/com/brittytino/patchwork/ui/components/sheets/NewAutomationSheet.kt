@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,12 +21,11 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalView
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.domain.diy.Automation
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
@@ -42,7 +40,7 @@ fun NewAutomationSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Column(
@@ -63,7 +61,7 @@ fun NewAutomationSheet(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 OutlinedIconButton(
                     onClick = { /* TODO: Implement import */ },
                     enabled = false
@@ -118,9 +116,9 @@ private fun AutomationTypeOption(
         shape = RoundedCornerShape(4.dp),
         modifier = modifier
             .fillMaxWidth()
-            .clickable { 
+            .clickable {
                 HapticUtil.performUIHaptic(view)
-                onClick() 
+                onClick()
             }
     ) {
         Row(
@@ -131,7 +129,7 @@ private fun AutomationTypeOption(
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -152,7 +150,9 @@ private fun AutomationTypeOption(
             Icon(
                 painter = painterResource(R.drawable.rounded_chevron_right_24),
                 contentDescription = null,
-                modifier = Modifier.padding(end = 4.dp).size(24.dp),
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .size(24.dp),
             )
         }
     }

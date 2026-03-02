@@ -1,5 +1,6 @@
 package com.brittytino.patchwork.ui.composables
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -12,10 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.fragment.app.FragmentActivity
-import com.brittytino.patchwork.utils.BiometricHelper
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -43,19 +41,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.brittytino.patchwork.domain.registry.FeatureRegistry
+import androidx.fragment.app.FragmentActivity
 import com.brittytino.patchwork.FeatureSettingsActivity
-import com.brittytino.patchwork.domain.registry.PermissionRegistry
 import com.brittytino.patchwork.R
+import com.brittytino.patchwork.domain.registry.FeatureRegistry
+import com.brittytino.patchwork.domain.registry.PermissionRegistry
+import com.brittytino.patchwork.ui.components.FavoriteCarousel
 import com.brittytino.patchwork.ui.components.cards.FeatureCard
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
-import com.brittytino.patchwork.ui.components.FavoriteCarousel
 import com.brittytino.patchwork.ui.components.sheets.PermissionItem
 import com.brittytino.patchwork.ui.components.sheets.PermissionsBottomSheet
+import com.brittytino.patchwork.utils.BiometricSecurityHelper
 import com.brittytino.patchwork.viewmodels.MainViewModel
 import kotlinx.coroutines.delay
 
-private val FEATURE_MAPS_POWER_SAVING = R.string.feat_maps_power_saving_title
+private const val FEATURE_MAPS_POWER_SAVING = R.string.feat_maps_power_saving_title
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -75,7 +75,7 @@ fun SetupFeatures(
     val isNotificationLightingAccessibilityEnabled by viewModel.isNotificationLightingAccessibilityEnabled
     val isRootEnabled by viewModel.isRootEnabled
     val isRootPermissionGranted by viewModel.isRootPermissionGranted
-    val isRootAvailable by viewModel.isRootAvailable
+    val isReadPhoneStateEnabled by viewModel.isReadPhoneStateEnabled
     viewModel.isButtonRemapEnabled.value
     viewModel.isDynamicNightLightEnabled.value
 
@@ -95,8 +95,9 @@ fun SetupFeatures(
                         description = R.string.perm_root_desc,
                         dependentFeatures = PermissionRegistry.getFeatures("ROOT"),
                         actionLabel = R.string.perm_action_grant,
-                        action = { 
-                            viewModel.isRootPermissionGranted.value = com.brittytino.patchwork.utils.RootUtils.isRootPermissionGranted()
+                        action = {
+                            viewModel.isRootPermissionGranted.value =
+                                com.brittytino.patchwork.utils.RootUtils.isRootPermissionGranted()
                         },
                         isGranted = isRootPermissionGranted
                     )
@@ -112,8 +113,10 @@ fun SetupFeatures(
                         dependentFeatures = PermissionRegistry.getFeatures("SHIZUKU"),
                         actionLabel = R.string.perm_shizuku_install_action,
                         action = {
-                            val intent = Intent(Intent.ACTION_VIEW,
-                                "https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api".toUri())
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                "https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api".toUri()
+                            )
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             context.startActivity(intent)
                         },
@@ -155,6 +158,14 @@ fun SetupFeatures(
     var showSheet by remember { mutableStateOf(false) }
     var currentFeature by remember { mutableStateOf<Int?>(null) }
 
+    // Help Sheet State
+    var showHelpSheet by remember { mutableStateOf(false) }
+    var selectedHelpFeature by remember {
+        mutableStateOf<com.brittytino.patchwork.domain.model.Feature?>(
+            null
+        )
+    }
+
     // Periodic check for Caffeinate status
     LaunchedEffect(Unit) {
         while (true) {
@@ -172,6 +183,7 @@ fun SetupFeatures(
         isNotificationListenerEnabled,
         isOverlayPermissionGranted,
         isNotificationLightingAccessibilityEnabled,
+        isReadPhoneStateEnabled,
         currentFeature
     ) {
         if (showSheet && currentFeature != null) {
@@ -193,6 +205,7 @@ fun SetupFeatures(
                         )
                     }
                 }
+
                 R.string.feat_statusbar_icons_title -> {
                     if (!isWriteSecureSettingsEnabled) {
                         missing.add(
@@ -203,23 +216,28 @@ fun SetupFeatures(
                                 dependentFeatures = PermissionRegistry.getFeatures("WRITE_SECURE_SETTINGS"),
                                 actionLabel = R.string.perm_action_copy_adb,
                                 action = {
-                                    val adbCommand = "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val adbCommand =
+                                        "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
+                                    val clipboard =
+                                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     val clip = ClipData.newPlainText("adb_command", adbCommand)
                                     clipboard.setPrimaryClip(clip)
                                 },
                                 secondaryActionLabel = R.string.perm_action_check,
                                 secondaryAction = {
-                                    viewModel.isWriteSecureSettingsEnabled.value = viewModel.canWriteSecureSettings(context)
+                                    viewModel.isWriteSecureSettingsEnabled.value =
+                                        viewModel.canWriteSecureSettings(context)
                                 },
                                 isGranted = isWriteSecureSettingsEnabled
                             )
                         )
                     }
                 }
+
                 FEATURE_MAPS_POWER_SAVING -> {
                     missing.addAll(buildMapsPowerSavingPermissionItems())
                 }
+
                 R.string.feat_notification_lighting_title -> {
                     if (!isOverlayPermissionGranted) {
                         missing.add(
@@ -230,8 +248,10 @@ fun SetupFeatures(
                                 dependentFeatures = PermissionRegistry.getFeatures("DRAW_OVERLAYS"),
                                 actionLabel = R.string.perm_action_grant,
                                 action = {
-                                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                        "package:${context.packageName}".toUri())
+                                    val intent = Intent(
+                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        "package:${context.packageName}".toUri()
+                                    )
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                     context.startActivity(intent)
                                 },
@@ -270,6 +290,7 @@ fun SetupFeatures(
                         )
                     }
                 }
+
                 R.string.feat_button_remap_title -> {
                     if (!isAccessibilityEnabled) {
                         missing.add(
@@ -289,6 +310,7 @@ fun SetupFeatures(
                         )
                     }
                 }
+
                 R.string.feat_dynamic_night_light_title -> {
                     if (!isAccessibilityEnabled) {
                         missing.add(
@@ -351,8 +373,10 @@ fun SetupFeatures(
                                 dependentFeatures = PermissionRegistry.getFeatures("WRITE_SECURE_SETTINGS"),
                                 actionLabel = R.string.perm_action_copy_adb,
                                 action = {
-                                    val adbCommand = "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val adbCommand =
+                                        "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
+                                    val clipboard =
+                                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     val clip = ClipData.newPlainText("adb_command", adbCommand)
                                     clipboard.setPrimaryClip(clip)
                                 },
@@ -376,6 +400,7 @@ fun SetupFeatures(
                         )
                     }
                 }
+
                 R.string.feat_app_lock_title -> {
                     if (!isAccessibilityEnabled) {
                         missing.add(
@@ -387,10 +412,73 @@ fun SetupFeatures(
                                 actionLabel = R.string.perm_action_enable,
                                 action = {
                                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                },
+                                isGranted = isAccessibilityEnabled
+                            )
+                        )
+                    }
+                }
+
+                R.string.feat_call_vibrations_title -> {
+                    if (!viewModel.isReadPhoneStateEnabled.value) {
+                        missing.add(
+                            PermissionItem(
+                                iconRes = R.drawable.rounded_mobile_24,
+                                title = R.string.permission_read_phone_state_title,
+                                description = R.string.permission_read_phone_state_desc_call_vibrations,
+                                dependentFeatures = PermissionRegistry.getFeatures("READ_PHONE_STATE"),
+                                actionLabel = R.string.perm_action_grant,
+                                action = { viewModel.requestReadPhoneStatePermission(context as Activity) },
+                                isGranted = isReadPhoneStateEnabled
+                            )
+                        )
+                    }
+                    if (!isNotificationListenerEnabled) {
+                        missing.add(
+                            PermissionItem(
+                                iconRes = R.drawable.rounded_notifications_unread_24,
+                                title = R.string.perm_notif_listener_title,
+                                description = R.string.perm_notif_listener_desc_lighting,
+                                dependentFeatures = PermissionRegistry.getFeatures("NOTIFICATION_LISTENER"),
+                                actionLabel = R.string.perm_action_grant,
+                                action = { viewModel.requestNotificationListenerPermission(context) },
+                                isGranted = isNotificationListenerEnabled
+                            )
+                        )
+                    }
+                }
+
+                R.string.feat_ambient_music_glance_title -> {
+                    if (!isAccessibilityEnabled) {
+                        missing.add(
+                            PermissionItem(
+                                iconRes = R.drawable.rounded_settings_accessibility_24,
+                                title = R.string.perm_accessibility_title,
+                                description = R.string.perm_accessibility_desc_ambient_music_glance,
+                                dependentFeatures = PermissionRegistry.getFeatures("ACCESSIBILITY"),
+                                actionLabel = R.string.perm_action_enable,
+                                action = {
+                                    val intent =
+                                        Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                     context.startActivity(intent)
                                 },
                                 isGranted = isAccessibilityEnabled
+                            )
+                        )
+                    }
+                    if (!isNotificationListenerEnabled) {
+                        missing.add(
+                            PermissionItem(
+                                iconRes = R.drawable.rounded_notifications_unread_24,
+                                title = R.string.perm_notif_listener_title,
+                                description = R.string.perm_notif_listener_desc_lighting,
+                                dependentFeatures = PermissionRegistry.getFeatures("NOTIFICATION_LISTENER"),
+                                actionLabel = R.string.perm_action_grant,
+                                action = { viewModel.requestNotificationListenerPermission(context) },
+                                isGranted = isNotificationListenerEnabled
                             )
                         )
                     }
@@ -418,6 +506,7 @@ fun SetupFeatures(
                     isGranted = isAccessibilityEnabled
                 )
             )
+
             R.string.feat_statusbar_icons_title -> listOf(
                 PermissionItem(
                     iconRes = R.drawable.rounded_security_24,
@@ -426,18 +515,22 @@ fun SetupFeatures(
                     dependentFeatures = PermissionRegistry.getFeatures("WRITE_SECURE_SETTINGS"),
                     actionLabel = R.string.perm_action_copy_adb,
                     action = {
-                        val adbCommand = "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val adbCommand =
+                            "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
+                        val clipboard =
+                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("adb_command", adbCommand)
                         clipboard.setPrimaryClip(clip)
                     },
                     secondaryActionLabel = R.string.perm_action_check,
                     secondaryAction = {
-                        viewModel.isWriteSecureSettingsEnabled.value = viewModel.canWriteSecureSettings(context)
+                        viewModel.isWriteSecureSettingsEnabled.value =
+                            viewModel.canWriteSecureSettings(context)
                     },
                     isGranted = isWriteSecureSettingsEnabled
                 )
             )
+
             FEATURE_MAPS_POWER_SAVING -> buildMapsPowerSavingPermissionItems()
             R.string.feat_notification_lighting_title -> listOf(
                 PermissionItem(
@@ -447,8 +540,10 @@ fun SetupFeatures(
                     dependentFeatures = PermissionRegistry.getFeatures("DRAW_OVERLAYS"),
                     actionLabel = R.string.perm_action_grant,
                     action = {
-                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            "package:${context.packageName}".toUri())
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            "package:${context.packageName}".toUri()
+                        )
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         context.startActivity(intent)
                     },
@@ -477,6 +572,7 @@ fun SetupFeatures(
                     isGranted = isNotificationListenerEnabled
                 )
             )
+
             R.string.feat_button_remap_title -> listOf(
                 PermissionItem(
                     iconRes = R.drawable.rounded_settings_accessibility_24,
@@ -492,6 +588,7 @@ fun SetupFeatures(
                     isGranted = isAccessibilityEnabled
                 )
             )
+
             R.string.feat_snooze_notifications_title -> listOf(
                 PermissionItem(
                     iconRes = R.drawable.rounded_snooze_24,
@@ -503,6 +600,7 @@ fun SetupFeatures(
                     isGranted = isNotificationListenerEnabled
                 )
             )
+
             R.string.feat_dynamic_night_light_title -> listOf(
                 PermissionItem(
                     iconRes = R.drawable.rounded_settings_accessibility_24,
@@ -527,6 +625,7 @@ fun SetupFeatures(
                     isGranted = isWriteSecureSettingsEnabled
                 )
             )
+
             R.string.feat_screen_locked_security_title -> listOf(
                 PermissionItem(
                     iconRes = R.drawable.rounded_settings_accessibility_24,
@@ -548,8 +647,10 @@ fun SetupFeatures(
                     dependentFeatures = PermissionRegistry.getFeatures("WRITE_SECURE_SETTINGS"),
                     actionLabel = R.string.perm_action_copy_adb,
                     action = {
-                        val adbCommand = "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val adbCommand =
+                            "adb shell pm grant com.brittytino.patchwork android.permission.WRITE_SECURE_SETTINGS"
+                        val clipboard =
+                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("adb_command", adbCommand)
                         clipboard.setPrimaryClip(clip)
                     },
@@ -583,6 +684,53 @@ fun SetupFeatures(
                     isGranted = isAccessibilityEnabled
                 )
             )
+
+            R.string.feat_call_vibrations_title -> listOf(
+                PermissionItem(
+                    iconRes = R.drawable.rounded_mobile_24,
+                    title = R.string.permission_read_phone_state_title,
+                    description = R.string.permission_read_phone_state_desc_call_vibrations,
+                    dependentFeatures = PermissionRegistry.getFeatures("READ_PHONE_STATE"),
+                    actionLabel = R.string.perm_action_grant,
+                    action = { viewModel.requestReadPhoneStatePermission(context as Activity) },
+                    isGranted = isReadPhoneStateEnabled
+                ),
+                PermissionItem(
+                    iconRes = R.drawable.rounded_notifications_unread_24,
+                    title = R.string.perm_notif_listener_title,
+                    description = R.string.perm_notif_listener_desc_lighting,
+                    dependentFeatures = PermissionRegistry.getFeatures("NOTIFICATION_LISTENER"),
+                    actionLabel = R.string.perm_action_grant,
+                    action = { viewModel.requestNotificationListenerPermission(context) },
+                    isGranted = isNotificationListenerEnabled
+                )
+            )
+
+            R.string.feat_ambient_music_glance_title -> listOf(
+                PermissionItem(
+                    iconRes = R.drawable.rounded_settings_accessibility_24,
+                    title = R.string.perm_accessibility_title,
+                    description = R.string.perm_accessibility_desc_ambient_music_glance,
+                    dependentFeatures = PermissionRegistry.getFeatures("ACCESSIBILITY"),
+                    actionLabel = R.string.perm_action_enable,
+                    action = {
+                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    },
+                    isGranted = isAccessibilityEnabled
+                ),
+                PermissionItem(
+                    iconRes = R.drawable.rounded_notifications_unread_24,
+                    title = R.string.perm_notif_listener_title,
+                    description = R.string.perm_notif_listener_desc_lighting,
+                    dependentFeatures = PermissionRegistry.getFeatures("NOTIFICATION_LISTENER"),
+                    actionLabel = R.string.perm_action_grant,
+                    action = { viewModel.requestNotificationListenerPermission(context) },
+                    isGranted = isNotificationListenerEnabled
+                )
+            )
+
             else -> emptyList()
         }
 
@@ -599,14 +747,22 @@ fun SetupFeatures(
         }
     }
 
+    if (showHelpSheet && selectedHelpFeature != null) {
+        com.brittytino.patchwork.ui.components.sheets.FeatureHelpBottomSheet(
+            onDismissRequest = {
+                showHelpSheet = false
+                selectedHelpFeature = null
+            },
+            feature = selectedHelpFeature!!
+        )
+    }
+
     val scrollState = rememberScrollState()
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
 
     val allFeatures = FeatureRegistry.ALL_FEATURES
-
-    var filtered by remember { mutableStateOf(allFeatures.toList()) }
 
     LaunchedEffect(searchRequested) {
         if (searchRequested) {
@@ -624,7 +780,7 @@ fun SetupFeatures(
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
             }
-            .padding(vertical = 24.dp),
+            .padding(top = 16.dp, bottom = 150.dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
@@ -635,7 +791,7 @@ fun SetupFeatures(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(16.dp)
                 .focusRequester(focusRequester)
                 .onFocusChanged { isFocused = it.isFocused },
             leadingIcon = {
@@ -645,7 +801,11 @@ fun SetupFeatures(
                     modifier = Modifier.size(24.dp)
                 )
             },
-            placeholder = { if (!isFocused && viewModel.searchQuery.value.isEmpty()) Text(stringResource(R.string.search_placeholder)) },
+            placeholder = {
+                if (!isFocused && viewModel.searchQuery.value.isEmpty()) Text(
+                    stringResource(R.string.search_placeholder)
+                )
+            },
             shape = MaterialTheme.shapes.extraExtraLarge,
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
@@ -659,16 +819,13 @@ fun SetupFeatures(
             FavoriteCarousel(
                 pinnedKeys = pinnedFeatureKeys,
                 onFeatureClick = { feature ->
-                    if (feature.category == R.string.cat_security && context is FragmentActivity) {
-                        BiometricHelper.showBiometricPrompt(
-                            activity = context,
-                            title = context.getString(R.string.biometric_title_settings_format, context.getString(feature.title)),
-                            subtitle = context.getString(R.string.biometric_subtitle_access_settings),
-                            onSuccess = { feature.onClick(context, viewModel) }
-                        )
-                    } else {
-                        feature.onClick(context, viewModel)
-                    }
+                    BiometricSecurityHelper.runWithAuth(
+                        activity = context as FragmentActivity,
+                        feature = feature,
+                        action = {
+                            feature.onClick(context, viewModel)
+                        }
+                    )
                 },
                 onFeatureLongClick = { feature ->
                     viewModel.togglePinFeature(feature.id)
@@ -733,7 +890,26 @@ fun SetupFeatures(
                             isEnabled = true,
                             onToggle = {},
                             onClick = {
-                                val action = {
+                                val feature = allFeatures.find { it.id == result.featureKey }
+                                if (feature != null) {
+                                    BiometricSecurityHelper.runWithAuth(
+                                        activity = context as FragmentActivity,
+                                        feature = feature,
+                                        action = {
+                                            context.startActivity(
+                                                Intent(
+                                                    context,
+                                                    FeatureSettingsActivity::class.java
+                                                ).apply {
+                                                    putExtra("feature", result.featureKey)
+                                                    result.targetSettingHighlightKey?.let {
+                                                        putExtra("highlight_setting", it)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    )
+                                } else {
                                     context.startActivity(
                                         Intent(context, FeatureSettingsActivity::class.java).apply {
                                             putExtra("feature", result.featureKey)
@@ -743,77 +919,61 @@ fun SetupFeatures(
                                         }
                                     )
                                 }
-                                if (result.category == "Security and Privacy" && context is FragmentActivity) {
-                                    BiometricHelper.showBiometricPrompt(
-                                        activity = context,
-                                        title = context.getString(R.string.biometric_title_settings_format, result.title),
-                                        subtitle = context.getString(R.string.biometric_subtitle_access_settings),
-                                        onSuccess = action
-                                    )
-                                } else {
-                                    action()
-                                }
                             },
                             iconRes = result.icon ?: R.drawable.rounded_settings_24,
                             modifier = Modifier.padding(horizontal = 0.dp, vertical = 0.dp),
                             showToggle = false,
                             hasMoreSettings = true,
-                            isBeta = result.isBeta, // Added isBeta
+                            isBeta = result.isBeta,
                             descriptionOverride = if (result.parentFeature != null) "${result.parentFeature} > ${result.description}" else result.description,
                             isPinned = pinnedFeatureKeys.contains(result.featureKey),
                             onPinToggle = {
                                 viewModel.togglePinFeature(result.featureKey)
-                            }
+                            },
+                            onHelpClick = if (allFeatures.find { it.id == result.featureKey }?.aboutDescription != null) {
+                                {
+                                    val feature = allFeatures.find { it.id == result.featureKey }
+                                    if (feature != null) {
+                                        selectedHelpFeature = feature
+                                        showHelpSheet = true
+                                    }
+                                }
+                            } else null
                         )
                     }
                 }
             }
         } else {
-            // Render filtered features grouped by category (Original View)
-            val categories = filtered.map { it.category }.distinct()
-            for (category in categories) {
-                val categoryFeatures = filtered.filter { it.category == category }
+            // Render Top Level Features (No Categories)
+            val topLevelFeatures =
+                allFeatures.filter { it.parentFeatureId == null && it.isVisibleInMain }
 
-                // Show category header if there are features in this category
-                if (categoryFeatures.isNotEmpty()) {
-                    Text(
-                        text = stringResource(id = category),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 32.dp, top = 16.dp, bottom = 8.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
+            if (topLevelFeatures.isNotEmpty()) {
                 RoundedCardContainer(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 ) {
-                    for (feature in categoryFeatures) {
+                    topLevelFeatures.forEachIndexed { index, feature ->
                         FeatureCard(
                             title = feature.title,
                             isEnabled = feature.isEnabled(viewModel),
                             onToggle = { enabled ->
-                                if (feature.category == R.string.cat_security && context is FragmentActivity) {
-                                    BiometricHelper.showBiometricPrompt(
-                                        activity = context,
-                                        title = context.getString(R.string.biometric_title_settings_format, context.getString(feature.title)),
-                                        subtitle = if (enabled) context.getString(R.string.biometric_subtitle_enable_feature) else context.getString(R.string.biometric_subtitle_disable_feature),
-                                        onSuccess = { feature.onToggle(viewModel, context, enabled) }
-                                    )
-                                } else {
-                                    feature.onToggle(viewModel, context, enabled)
-                                }
+                                BiometricSecurityHelper.runWithAuth(
+                                    activity = context as FragmentActivity,
+                                    feature = feature,
+                                    isToggle = true,
+                                    action = {
+                                        feature.onToggle(viewModel, context, enabled)
+                                    }
+                                )
                             },
                             onClick = {
-                                if (feature.category == R.string.cat_security && context is FragmentActivity) {
-                                    BiometricHelper.showBiometricPrompt(
-                                        activity = context,
-                                        title = context.getString(R.string.biometric_title_settings_format, context.getString(feature.title)),
-                                        subtitle = context.getString(R.string.biometric_subtitle_access_settings),
-                                        onSuccess = { feature.onClick(context, viewModel) }
-                                    )
-                                } else {
-                                    feature.onClick(context, viewModel)
-                                }
+                                BiometricSecurityHelper.runWithAuth(
+                                    activity = context as FragmentActivity,
+                                    feature = feature,
+                                    action = {
+                                        feature.onClick(context, viewModel)
+                                    }
+                                )
                             },
                             iconRes = feature.iconRes,
                             modifier = Modifier.padding(horizontal = 0.dp, vertical = 0.dp),
@@ -829,7 +989,13 @@ fun SetupFeatures(
                             isPinned = pinnedFeatureKeys.contains(feature.id),
                             onPinToggle = {
                                 viewModel.togglePinFeature(feature.id)
-                            }
+                            },
+                            onHelpClick = if (feature.aboutDescription != null) {
+                                {
+                                    selectedHelpFeature = feature
+                                    showHelpSheet = true
+                                }
+                            } else null
                         )
                     }
                 }

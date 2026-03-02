@@ -8,19 +8,28 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.ContentObserver
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.provider.CalendarContract
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.brittytino.patchwork.R
-import com.brittytino.patchwork.domain.MapsState
-import com.brittytino.patchwork.domain.registry.SearchRegistry
 import com.brittytino.patchwork.data.repository.SettingsRepository
 import com.brittytino.patchwork.data.repository.UpdateRepository
+import com.brittytino.patchwork.domain.HapticFeedbackType
+import com.brittytino.patchwork.domain.MapsState
 import com.brittytino.patchwork.domain.model.AppSelection
 import com.brittytino.patchwork.domain.model.NotificationApp
 import com.brittytino.patchwork.domain.model.NotificationLightingColorMode
@@ -28,13 +37,14 @@ import com.brittytino.patchwork.domain.model.NotificationLightingSide
 import com.brittytino.patchwork.domain.model.NotificationLightingStyle
 import com.brittytino.patchwork.domain.model.SearchableItem
 import com.brittytino.patchwork.domain.model.UpdateInfo
+import com.brittytino.patchwork.domain.registry.SearchRegistry
 import com.brittytino.patchwork.services.CaffeinateWakeLockService
 import com.brittytino.patchwork.services.NotificationLightingService
-import com.brittytino.patchwork.services.tiles.ScreenOffAccessibilityService
 import com.brittytino.patchwork.services.receivers.SecurityDeviceAdminReceiver
+import com.brittytino.patchwork.services.tiles.ScreenOffAccessibilityService
 import com.brittytino.patchwork.utils.AppUtil
-import com.brittytino.patchwork.domain.HapticFeedbackType
 import com.brittytino.patchwork.utils.PermissionUtils
+import com.brittytino.patchwork.utils.RootUtils
 import com.brittytino.patchwork.utils.ShizukuUtils
 import com.brittytino.patchwork.utils.UpdateNotificationHelper
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +83,11 @@ class MainViewModel : ViewModel() {
     val volumeDownActionOn = mutableStateOf("None")
     val remapHapticType = mutableStateOf(HapticFeedbackType.DOUBLE)
     val isDynamicNightLightEnabled = mutableStateOf(false)
-    val snoozeChannels = mutableStateOf<List<com.brittytino.patchwork.domain.model.SnoozeChannel>>(emptyList())
+    val snoozeChannels =
+        mutableStateOf<List<com.brittytino.patchwork.domain.model.SnoozeChannel>>(emptyList())
+    val mapsChannels =
+        mutableStateOf<List<com.brittytino.patchwork.domain.model.MapsChannel>>(emptyList())
+    val isSnoozeHeadsUpEnabled = mutableStateOf(false)
     val isFlashlightAlwaysTurnOffEnabled = mutableStateOf(false)
     val isFlashlightFadeEnabled = mutableStateOf(false)
     val isFlashlightAdjustEnabled = mutableStateOf(false)
@@ -82,19 +96,40 @@ class MainViewModel : ViewModel() {
     val flashlightLastIntensity = mutableStateOf(1)
     val isFlashlightPulseEnabled = mutableStateOf(false)
     val isFlashlightPulseFacedownOnly = mutableStateOf(true)
+    val isFlashlightPulseUseLightingApps = mutableStateOf(true)
     val isLocationPermissionGranted = mutableStateOf(false)
     val isBackgroundLocationPermissionGranted = mutableStateOf(false)
     val isFullScreenIntentPermissionGranted = mutableStateOf(false)
     val isBluetoothPermissionGranted = mutableStateOf(false)
     val isUsageStatsPermissionGranted = mutableStateOf(false)
-    
-    val isBluetoothDevicesEnabled = mutableStateOf(false)
 
+    val isBluetoothDevicesEnabled = mutableStateOf(false)
+    val isCallVibrationsEnabled = mutableStateOf(false)
+    val isCalendarSyncEnabled = mutableStateOf(false)
+    val isCalendarSyncPeriodicEnabled = mutableStateOf(false)
+    val isBatteryNotificationEnabled = mutableStateOf(false)
+    val isAodEnabled = mutableStateOf(false)
+    val isNotificationGlanceEnabled = mutableStateOf(false)
+    val isAodForceTurnOffEnabled = mutableStateOf(false)
+    val isAutoAccessibilityEnabled = mutableStateOf(false)
+    val isNotificationGlanceSameAsLightingEnabled = mutableStateOf(true)
+
+
+    data class CalendarAccount(
+        val id: Long,
+        val name: String,
+        val accountName: String,
+        val isSelected: Boolean
+    )
+
+    val availableCalendars = mutableStateListOf<CalendarAccount>()
+    val selectedCalendarIds = mutableStateOf(setOf<String>())
 
 
     val isScreenLockedSecurityEnabled = mutableStateOf(false)
     val isDeviceAdminEnabled = mutableStateOf(false)
     val isDeveloperModeEnabled = mutableStateOf(false)
+    val isNotificationPolicyAccessGranted = mutableStateOf(false)
     val skipSilentNotifications = mutableStateOf(true)
     val notificationLightingStyle = mutableStateOf(NotificationLightingStyle.STROKE)
     val notificationLightingColorMode = mutableStateOf(NotificationLightingColorMode.SYSTEM)
@@ -104,7 +139,8 @@ class MainViewModel : ViewModel() {
     val notificationLightingIndicatorX = mutableStateOf(50f) // 0-100 percentage
     val notificationLightingIndicatorY = mutableStateOf(2f)  // 0-100 percentage, default top
     val notificationLightingIndicatorScale = mutableStateOf(1.0f)
-    val notificationLightingGlowSides = mutableStateOf(setOf(NotificationLightingSide.LEFT, NotificationLightingSide.RIGHT))
+    val notificationLightingGlowSides =
+        mutableStateOf(setOf(NotificationLightingSide.LEFT, NotificationLightingSide.RIGHT))
     val skipPersistentNotifications = mutableStateOf(false)
     val isAppLockEnabled = mutableStateOf(false)
     val isFreezeWhenLockedEnabled = mutableStateOf(false)
@@ -112,13 +148,7 @@ class MainViewModel : ViewModel() {
     val freezePickedApps = mutableStateOf<List<NotificationApp>>(emptyList())
     val isFreezePickedAppsLoading = mutableStateOf(false)
     val freezeAutoExcludedApps = mutableStateOf<Set<String>>(emptySet())
-
-    // Hidden features
-    val isAppBehaviorControllerEnabled = mutableStateOf(false)
-    val isSmartAppCooldownEnabled = mutableStateOf(false)
-    val isIdleAppAutoActionEnabled = mutableStateOf(false)
-    val isActionHistoryEnabled = mutableStateOf(false)
-    val isSystemSnapshotsEnabled = mutableStateOf(false)
+    val isFreezeDontFreezeActiveAppsEnabled = mutableStateOf(false)
 
     // Search state
     val searchQuery = mutableStateOf("")
@@ -135,9 +165,10 @@ class MainViewModel : ViewModel() {
     val isRootEnabled = mutableStateOf(false)
     val isRootAvailable = mutableStateOf(false)
     val isRootPermissionGranted = mutableStateOf(false)
+    val hasPendingUpdates = mutableStateOf(false)
 
     val isPitchBlackThemeEnabled = mutableStateOf(false)
-    
+
     // Keyboard Customization
     val keyboardHeight = mutableFloatStateOf(54f)
     val keyboardBottomPadding = mutableFloatStateOf(0f)
@@ -153,6 +184,11 @@ class MainViewModel : ViewModel() {
     val isKeyboardEnabled = mutableStateOf(false)
     val isKeyboardSelected = mutableStateOf(false)
     val isWriteSettingsEnabled = mutableStateOf(false)
+    val isCalendarPermissionGranted = mutableStateOf(false)
+    val isUserDictionaryEnabled = mutableStateOf(false)
+    val userDictionaryWords = mutableStateOf<Map<String, Long>>(emptyMap())
+    val isUserDictionarySheetVisible = mutableStateOf(false)
+    val isLongPressSymbolsEnabled = mutableStateOf(false)
 
     // AirSync Bridge
     val isAirSyncConnectionEnabled = mutableStateOf(false)
@@ -162,243 +198,615 @@ class MainViewModel : ViewModel() {
     val isMacConnected = mutableStateOf(false)
     val batteryWidgetMaxDevices = mutableIntStateOf(8)
     val isBatteryWidgetBackgroundEnabled = mutableStateOf(true)
+    val isAmbientMusicGlanceDockedModeEnabled = mutableStateOf(false)
+    val fontScale = mutableFloatStateOf(1.0f)
+    val fontWeight = mutableIntStateOf(0)
+    val animatorDurationScale = mutableFloatStateOf(1.0f)
+    val transitionAnimationScale = mutableFloatStateOf(1.0f)
+    val windowAnimationScale = mutableFloatStateOf(1.0f)
+    val smallestWidth = mutableIntStateOf(360)
+    val hasShizukuPermission = mutableStateOf(false)
 
     private var lastUpdateCheckTime: Long = 0
-    private lateinit var settingsRepository: SettingsRepository
+    lateinit var settingsRepository: SettingsRepository
     private lateinit var updateRepository: UpdateRepository
     private var appContext: Context? = null
 
-    private val preferenceChangeListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        // We still use this listener for now, attached via Repository
-        if (key == null) return@OnSharedPreferenceChangeListener
-        
-        when (key) {
-            SettingsRepository.KEY_EDGE_LIGHTING_ENABLED -> isNotificationLightingEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_DYNAMIC_NIGHT_LIGHT_ENABLED -> isDynamicNightLightEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_SCREEN_LOCKED_SECURITY_ENABLED -> isScreenLockedSecurityEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_MAPS_POWER_SAVING_ENABLED -> {
-                isMapsPowerSavingEnabled.value = settingsRepository.getBoolean(key)
-                MapsState.isEnabled = isMapsPowerSavingEnabled.value
-            }
-            SettingsRepository.KEY_STATUS_BAR_ICON_CONTROL_ENABLED -> isStatusBarIconControlEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_BUTTON_REMAP_ENABLED -> isButtonRemapEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_APP_LOCK_ENABLED -> isAppLockEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_FREEZE_WHEN_LOCKED_ENABLED -> isFreezeWhenLockedEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_FREEZE_LOCK_DELAY_INDEX -> freezeLockDelayIndex.intValue = settingsRepository.getInt(key, 1)
-            SettingsRepository.KEY_FREEZE_AUTO_EXCLUDED_APPS -> {
-                freezeAutoExcludedApps.value = settingsRepository.getFreezeAutoExcludedApps()
-            }
-            SettingsRepository.KEY_APP_BEHAVIOR_CONTROLLER_ENABLED -> isAppBehaviorControllerEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_SMART_APP_COOLDOWN_ENABLED -> isSmartAppCooldownEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_IDLE_APP_AUTO_ACTION_ENABLED -> {
-                val enabled = settingsRepository.getBoolean(key)
-                isIdleAppAutoActionEnabled.value = enabled
-                // Auto-start/stop monitoring
-                appContext?.let { ctx ->
-                    if (enabled) {
-                        com.brittytino.patchwork.services.IdleAppEngine.getInstance(ctx).startMonitoring()
-                    } else {
-                        com.brittytino.patchwork.services.IdleAppEngine.getInstance(ctx).stopMonitoring()
+    val gitHubToken = mutableStateOf<String?>(null)
+
+    private val contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            uri?.let {
+                when (it) {
+                    Settings.System.getUriFor(Settings.System.FONT_SCALE) -> {
+                        fontScale.floatValue = settingsRepository.getFontScale()
+                    }
+                    Settings.Secure.getUriFor("font_weight_adjustment") -> {
+                        fontWeight.intValue = settingsRepository.getFontWeight()
+                    }
+                    Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE) -> {
+                        animatorDurationScale.floatValue = settingsRepository.getAnimationScale(Settings.Global.ANIMATOR_DURATION_SCALE)
+                    }
+                    Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE) -> {
+                        transitionAnimationScale.floatValue = settingsRepository.getAnimationScale(Settings.Global.TRANSITION_ANIMATION_SCALE)
+                    }
+                    Settings.Global.getUriFor(Settings.Global.WINDOW_ANIMATION_SCALE) -> {
+                        windowAnimationScale.floatValue = settingsRepository.getAnimationScale(Settings.Global.WINDOW_ANIMATION_SCALE)
+                    }
+                    Settings.Secure.getUriFor("display_density_forced") -> {
+                        smallestWidth.intValue = settingsRepository.getSmallestWidth()
+                    }
+                    Settings.Secure.getUriFor("doze_always_on") -> {
+                        isAodEnabled.value = settingsRepository.isAodEnabled()
                     }
                 }
             }
-            SettingsRepository.KEY_ACTION_HISTORY_ENABLED -> isActionHistoryEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_SYSTEM_SNAPSHOTS_ENABLED -> isSystemSnapshotsEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_USE_ROOT -> isRootEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_CHECK_PRE_RELEASES_ENABLED -> isPreReleaseCheckEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_DEVELOPER_MODE_ENABLED -> {
-                isDeveloperModeEnabled.value = settingsRepository.getBoolean(key)
-            }
-            SettingsRepository.KEY_PITCH_BLACK_THEME_ENABLED -> isPitchBlackThemeEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_KEYBOARD_HEIGHT -> keyboardHeight.floatValue = settingsRepository.getFloat(key, 54f)
-            SettingsRepository.KEY_KEYBOARD_BOTTOM_PADDING -> keyboardBottomPadding.floatValue = settingsRepository.getFloat(key, 0f)
-            SettingsRepository.KEY_KEYBOARD_ROUNDNESS -> keyboardRoundness.floatValue = settingsRepository.getFloat(key, 24f)
-            SettingsRepository.KEY_KEYBOARD_HAPTICS_ENABLED -> isKeyboardHapticsEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_KEYBOARD_FUNCTIONS_BOTTOM -> isKeyboardFunctionsBottom.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_KEYBOARD_FUNCTIONS_PADDING -> keyboardFunctionsPadding.floatValue = settingsRepository.getFloat(key, 0f)
-            SettingsRepository.KEY_KEYBOARD_HAPTIC_STRENGTH -> keyboardHapticStrength.floatValue = settingsRepository.getFloat(key, 0.5f)
-            SettingsRepository.KEY_KEYBOARD_SHAPE -> keyboardShape.intValue = settingsRepository.getInt(key, 0)
-            SettingsRepository.KEY_KEYBOARD_ALWAYS_DARK -> isKeyboardAlwaysDark.value = settingsRepository.getBoolean(key, false)
-            SettingsRepository.KEY_KEYBOARD_PITCH_BLACK -> isKeyboardPitchBlack.value = settingsRepository.getBoolean(key, false)
-            SettingsRepository.KEY_KEYBOARD_CLIPBOARD_ENABLED -> isKeyboardClipboardEnabled.value = settingsRepository.getBoolean(key, true)
-            SettingsRepository.KEY_AIRSYNC_CONNECTION_ENABLED -> isAirSyncConnectionEnabled.value = settingsRepository.getBoolean(key)
-            SettingsRepository.KEY_MAC_BATTERY_LEVEL -> macBatteryLevel.intValue = settingsRepository.getInt(key, -1)
-            SettingsRepository.KEY_MAC_BATTERY_IS_CHARGING -> isMacBatteryCharging.value = settingsRepository.getBoolean(key, false)
-            SettingsRepository.KEY_MAC_BATTERY_LAST_UPDATED -> macBatteryLastUpdated.value = settingsRepository.getLong(key, 0L)
-            SettingsRepository.KEY_AIRSYNC_MAC_CONNECTED -> isMacConnected.value = settingsRepository.getBoolean(key, false)
-            SettingsRepository.KEY_BATTERY_WIDGET_MAX_DEVICES -> batteryWidgetMaxDevices.intValue = settingsRepository.getInt(key, 8)
-            SettingsRepository.KEY_SNOOZE_DISCOVERED_CHANNELS, SettingsRepository.KEY_SNOOZE_BLOCKED_CHANNELS -> {
-                appContext?.let { loadSnoozeChannels(it) }
-            }
-            SettingsRepository.KEY_PINNED_FEATURES -> {
-                pinnedFeatureKeys.value = settingsRepository.getPinnedFeatures()
-            }
         }
     }
+
+    private val preferenceChangeListener =
+        object : android.content.SharedPreferences.OnSharedPreferenceChangeListener {
+            override fun onSharedPreferenceChanged(sharedPreferences: android.content.SharedPreferences?, key: String?) {
+                if (key == null) return
+
+                when (key) {
+                    SettingsRepository.KEY_EDGE_LIGHTING_ENABLED -> isNotificationLightingEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_DYNAMIC_NIGHT_LIGHT_ENABLED -> isDynamicNightLightEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_SCREEN_LOCKED_SECURITY_ENABLED -> isScreenLockedSecurityEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_MAPS_POWER_SAVING_ENABLED -> {
+                        isMapsPowerSavingEnabled.value = settingsRepository.getBoolean(key)
+                        MapsState.isEnabled = isMapsPowerSavingEnabled.value
+                    }
+
+                    SettingsRepository.KEY_STATUS_BAR_ICON_CONTROL_ENABLED -> isStatusBarIconControlEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_BUTTON_REMAP_ENABLED -> isButtonRemapEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_APP_LOCK_ENABLED -> isAppLockEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_FREEZE_WHEN_LOCKED_ENABLED -> isFreezeWhenLockedEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_FREEZE_DONT_FREEZE_ACTIVE_APPS -> isFreezeDontFreezeActiveAppsEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_FREEZE_LOCK_DELAY_INDEX -> freezeLockDelayIndex.intValue =
+                        settingsRepository.getInt(key, 1)
+
+                    SettingsRepository.KEY_FREEZE_AUTO_EXCLUDED_APPS -> {
+                        freezeAutoExcludedApps.value = settingsRepository.getFreezeAutoExcludedApps()
+                    }
+
+                    SettingsRepository.KEY_USE_ROOT -> isRootEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_CHECK_PRE_RELEASES_ENABLED -> isPreReleaseCheckEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_DEVELOPER_MODE_ENABLED -> {
+                        isDeveloperModeEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_PITCH_BLACK_THEME_ENABLED -> isPitchBlackThemeEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_KEYBOARD_HEIGHT -> keyboardHeight.floatValue =
+                        settingsRepository.getFloat(key, 54f)
+
+                    SettingsRepository.KEY_KEYBOARD_BOTTOM_PADDING -> keyboardBottomPadding.floatValue =
+                        settingsRepository.getFloat(key, 0f)
+
+                    SettingsRepository.KEY_KEYBOARD_ROUNDNESS -> keyboardRoundness.floatValue =
+                        settingsRepository.getFloat(key, 24f)
+
+                    SettingsRepository.KEY_KEYBOARD_HAPTICS_ENABLED -> isKeyboardHapticsEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_KEYBOARD_FUNCTIONS_BOTTOM -> isKeyboardFunctionsBottom.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_KEYBOARD_FUNCTIONS_PADDING -> keyboardFunctionsPadding.floatValue =
+                        settingsRepository.getFloat(key, 0f)
+
+                    SettingsRepository.KEY_KEYBOARD_HAPTIC_STRENGTH -> keyboardHapticStrength.floatValue =
+                        settingsRepository.getFloat(key, 0.5f)
+
+                    SettingsRepository.KEY_KEYBOARD_SHAPE -> keyboardShape.intValue =
+                        settingsRepository.getInt(key, 0)
+
+                    SettingsRepository.KEY_KEYBOARD_ALWAYS_DARK -> isKeyboardAlwaysDark.value =
+                        settingsRepository.getBoolean(key, false)
+
+                    SettingsRepository.KEY_KEYBOARD_PITCH_BLACK -> isKeyboardPitchBlack.value =
+                        settingsRepository.getBoolean(key, false)
+
+                    SettingsRepository.KEY_KEYBOARD_CLIPBOARD_ENABLED -> isKeyboardClipboardEnabled.value =
+                        settingsRepository.getBoolean(key, true)
+
+                    SettingsRepository.KEY_KEYBOARD_LONG_PRESS_SYMBOLS -> isLongPressSymbolsEnabled.value =
+                        settingsRepository.getBoolean(key, false)
+
+                    SettingsRepository.KEY_AIRSYNC_CONNECTION_ENABLED -> isAirSyncConnectionEnabled.value =
+                        settingsRepository.getBoolean(key)
+
+                    SettingsRepository.KEY_MAC_BATTERY_LEVEL -> macBatteryLevel.intValue =
+                        settingsRepository.getInt(key, -1)
+
+                    SettingsRepository.KEY_MAC_BATTERY_IS_CHARGING -> isMacBatteryCharging.value =
+                        settingsRepository.getBoolean(key, false)
+
+                    SettingsRepository.KEY_MAC_BATTERY_LAST_UPDATED -> macBatteryLastUpdated.value =
+                        settingsRepository.getLong(key, 0L)
+
+                    SettingsRepository.KEY_AIRSYNC_MAC_CONNECTED -> isMacConnected.value =
+                        settingsRepository.getBoolean(key, false)
+
+                    SettingsRepository.KEY_BATTERY_WIDGET_MAX_DEVICES -> batteryWidgetMaxDevices.intValue =
+                        settingsRepository.getInt(key, 8)
+
+                    SettingsRepository.KEY_SNOOZE_DISCOVERED_CHANNELS, SettingsRepository.KEY_SNOOZE_BLOCKED_CHANNELS -> {
+                        appContext?.let { loadSnoozeChannels(it) }
+                    }
+
+                    SettingsRepository.KEY_MAPS_DISCOVERED_CHANNELS, SettingsRepository.KEY_MAPS_DETECTION_CHANNELS -> {
+                        appContext?.let { loadMapsChannels(it) }
+                    }
+
+                    SettingsRepository.KEY_SNOOZE_HEADS_UP_ENABLED -> {
+                        isSnoozeHeadsUpEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_PINNED_FEATURES -> {
+                        pinnedFeatureKeys.value = settingsRepository.getPinnedFeatures()
+                    }
+
+                    SettingsRepository.KEY_CALL_VIBRATIONS_ENABLED -> {
+                        isCallVibrationsEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_LIKE_SONG_TOAST_ENABLED -> {
+                        isLikeSongToastEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_LIKE_SONG_AOD_OVERLAY_ENABLED -> {
+                        isLikeSongAodOverlayEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_AMBIENT_MUSIC_GLANCE_ENABLED -> {
+                        isAmbientMusicGlanceEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_AMBIENT_MUSIC_GLANCE_DOCKED_MODE -> {
+                        isAmbientMusicGlanceDockedModeEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_CALENDAR_SYNC_ENABLED -> {
+                        isCalendarSyncEnabled.value = settingsRepository.getBoolean(key)
+                    }
+
+                    SettingsRepository.KEY_TRACKED_REPOS -> {
+                        appContext?.let { refreshTrackedUpdates(it) }
+                    }
+
+                    SettingsRepository.KEY_FONT_SCALE -> fontScale.floatValue = settingsRepository.getFontScale()
+                    SettingsRepository.KEY_FONT_WEIGHT -> fontWeight.intValue = settingsRepository.getFontWeight()
+                    SettingsRepository.KEY_ANIMATOR_DURATION_SCALE -> animatorDurationScale.floatValue = settingsRepository.getAnimationScale(android.provider.Settings.Global.ANIMATOR_DURATION_SCALE)
+                    SettingsRepository.KEY_TRANSITION_ANIMATION_SCALE -> transitionAnimationScale.floatValue = settingsRepository.getAnimationScale(android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE)
+                    SettingsRepository.KEY_WINDOW_ANIMATION_SCALE -> windowAnimationScale.floatValue = settingsRepository.getAnimationScale(android.provider.Settings.Global.WINDOW_ANIMATION_SCALE)
+                    SettingsRepository.KEY_SMALLEST_WIDTH -> smallestWidth.intValue = settingsRepository.getSmallestWidth()
+                    SettingsRepository.KEY_NOTIFICATION_GLANCE_ENABLED -> isNotificationGlanceEnabled.value = settingsRepository.getBoolean(key)
+                    SettingsRepository.KEY_AOD_FORCE_TURN_OFF_ENABLED -> isAodForceTurnOffEnabled.value = settingsRepository.getBoolean(key)
+                    SettingsRepository.KEY_NOTIFICATION_GLANCE_SAME_AS_LIGHTING -> isNotificationGlanceSameAsLightingEnabled.value = settingsRepository.getBoolean(key, true)
+                    SettingsRepository.KEY_AUTO_ACCESSIBILITY_ENABLED -> isAutoAccessibilityEnabled.value = settingsRepository.getBoolean(key)
+                }
+            }
+        }
 
     fun check(context: Context) {
         appContext = context.applicationContext
         settingsRepository = SettingsRepository(context)
         updateRepository = UpdateRepository()
-        
+
         isAccessibilityEnabled.value = PermissionUtils.isAccessibilityServiceEnabled(context)
         isWriteSecureSettingsEnabled.value = PermissionUtils.canWriteSecureSettings(context)
-        isReadPhoneStateEnabled.value = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED
+        isShizukuAvailable.value = ShizukuUtils.isShizukuAvailable()
+        isShizukuPermissionGranted.value = ShizukuUtils.hasPermission()
+        isAutoAccessibilityEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_AUTO_ACCESSIBILITY_ENABLED)
+
+        if (isAutoAccessibilityEnabled.value && !isAccessibilityEnabled.value) {
+            val serviceName = "${context.packageName}/${ScreenOffAccessibilityService::class.java.name}"
+            var success = false
+
+            if (isWriteSecureSettingsEnabled.value) {
+                try {
+                    val enabledServices = Settings.Secure.getString(
+                        context.contentResolver,
+                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                    ) ?: ""
+                    val newServices = if (enabledServices.isEmpty()) serviceName else if (!enabledServices.contains(serviceName)) "$enabledServices:$serviceName" else enabledServices
+                    Settings.Secure.putString(
+                        context.contentResolver,
+                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                        newServices
+                    )
+                    Settings.Secure.putString(
+                        context.contentResolver,
+                        Settings.Secure.ACCESSIBILITY_ENABLED,
+                        "1"
+                    )
+                    success = true
+                } catch (e: Exception) {
+                    success = false
+                }
+            }
+
+            if (success) {
+                isAccessibilityEnabled.value = PermissionUtils.isAccessibilityServiceEnabled(context)
+                if (isAccessibilityEnabled.value) {
+                    android.widget.Toast.makeText(context, "Accessibility auto-granted", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        isReadPhoneStateEnabled.value = PermissionUtils.hasReadPhoneStatePermission(context)
         isPostNotificationsEnabled.value = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED
-        isShizukuAvailable.value = ShizukuUtils.isShizukuAvailable()
-        isShizukuPermissionGranted.value = ShizukuUtils.hasPermission()
-        isNotificationListenerEnabled.value = PermissionUtils.hasNotificationListenerPermission(context)
+        isNotificationListenerEnabled.value =
+            PermissionUtils.hasNotificationListenerPermission(context)
         isOverlayPermissionGranted.value = PermissionUtils.canDrawOverlays(context)
-        isNotificationLightingAccessibilityEnabled.value = PermissionUtils.isNotificationLightingAccessibilityServiceEnabled(context)
+        isNotificationLightingAccessibilityEnabled.value =
+            PermissionUtils.isNotificationLightingAccessibilityServiceEnabled(context)
         isDefaultBrowserSet.value = PermissionUtils.isDefaultBrowser(context)
         isLocationPermissionGranted.value = PermissionUtils.hasLocationPermission(context)
-        isBackgroundLocationPermissionGranted.value = PermissionUtils.hasBackgroundLocationPermission(context)
+        isBackgroundLocationPermissionGranted.value =
+            PermissionUtils.hasBackgroundLocationPermission(context)
         isFullScreenIntentPermissionGranted.value = PermissionUtils.canUseFullScreenIntent(context)
         isKeyboardEnabled.value = PermissionUtils.isKeyboardEnabled(context)
         isKeyboardSelected.value = PermissionUtils.isKeyboardSelected(context)
         isWriteSettingsEnabled.value = PermissionUtils.canWriteSystemSettings(context)
-        
-        isBluetoothPermissionGranted.value = PermissionUtils.hasBluetoothPermission(context)
+        isNotificationPolicyAccessGranted.value =
+            PermissionUtils.hasNotificationPolicyAccess(context)
+        isCalendarPermissionGranted.value = PermissionUtils.hasReadCalendarPermission(context)
         isUsageStatsPermissionGranted.value = PermissionUtils.hasUsageStatsPermission(context)
-        
+
+        isBluetoothPermissionGranted.value = PermissionUtils.hasBluetoothPermission(context)
+
+        context.contentResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.FONT_SCALE),
+            false,
+            contentObserver
+        )
+        context.contentResolver.registerContentObserver(
+            Settings.Secure.getUriFor("font_weight_adjustment"),
+            false,
+            contentObserver
+        )
+        context.contentResolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE),
+            false,
+            contentObserver
+        )
+        context.contentResolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            false,
+            contentObserver
+        )
+        context.contentResolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.WINDOW_ANIMATION_SCALE),
+            false,
+            contentObserver
+        )
+        context.contentResolver.registerContentObserver(
+            Settings.Secure.getUriFor("display_density_forced"),
+            false,
+            contentObserver
+        )
+
+        context.contentResolver.registerContentObserver(
+            Settings.Secure.getUriFor("doze_always_on"),
+            false,
+            contentObserver
+        )
+
         settingsRepository.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
-        
-        isWidgetEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_WIDGET_ENABLED)
-        isStatusBarIconControlEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_STATUS_BAR_ICON_CONTROL_ENABLED)
-        isMapsPowerSavingEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_MAPS_POWER_SAVING_ENABLED)
-        isNotificationLightingEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_ENABLED)
-        onlyShowWhenScreenOff.value = settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_ONLY_SCREEN_OFF, true)
-        isAmbientDisplayEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_AMBIENT_DISPLAY)
-        isAmbientShowLockScreenEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_AMBIENT_SHOW_LOCK_SCREEN)
-        skipSilentNotifications.value = settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_SKIP_SILENT, true)
-        skipPersistentNotifications.value = settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_SKIP_PERSISTENT)
-        
-        notificationLightingStyle.value = settingsRepository.getNotificationLightingStyle()
-        notificationLightingColorMode.value = settingsRepository.getNotificationLightingColorMode()
-        notificationLightingCustomColor.intValue = settingsRepository.getInt(SettingsRepository.KEY_EDGE_LIGHTING_CUSTOM_COLOR, 0xFF6200EE.toInt())
-        notificationLightingPulseCount.value = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_PULSE_COUNT, 1f)
-        notificationLightingPulseDuration.value = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_PULSE_DURATION, 3000f)
-        notificationLightingIndicatorX.value = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_INDICATOR_X, 50f)
-        notificationLightingIndicatorY.value = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_INDICATOR_Y, 2f)
-        isRootEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_USE_ROOT)
-        
-        viewModelScope.launch(Dispatchers.IO) {
-            if (isRootEnabled.value) {
-                val available = com.brittytino.patchwork.utils.RootUtils.isRootAvailable()
-                val granted = com.brittytino.patchwork.utils.RootUtils.isRootPermissionGranted()
-                withContext(Dispatchers.Main) {
-                    isRootAvailable.value = available
-                    isRootPermissionGranted.value = granted
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    isRootAvailable.value = false
-                    isRootPermissionGranted.value = false
-                }
+
+        viewModelScope.launch {
+            settingsRepository.gitHubToken.collect {
+                gitHubToken.value = it
             }
         }
+
+        isWidgetEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_WIDGET_ENABLED)
+        isStatusBarIconControlEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_STATUS_BAR_ICON_CONTROL_ENABLED)
         
-        notificationLightingIndicatorScale.value = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_INDICATOR_SCALE, 1.0f)
+        fontScale.floatValue = settingsRepository.getFontScale()
+        fontWeight.intValue = settingsRepository.getFontWeight()
+        animatorDurationScale.floatValue = settingsRepository.getAnimationScale(android.provider.Settings.Global.ANIMATOR_DURATION_SCALE)
+        transitionAnimationScale.floatValue = settingsRepository.getAnimationScale(android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE)
+        windowAnimationScale.floatValue = settingsRepository.getAnimationScale(android.provider.Settings.Global.WINDOW_ANIMATION_SCALE)
+        smallestWidth.intValue = settingsRepository.getSmallestWidth()
+        hasShizukuPermission.value = ShizukuUtils.hasPermission() || RootUtils.isRootAvailable()
+
+        isMapsPowerSavingEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_MAPS_POWER_SAVING_ENABLED)
+        isNotificationLightingEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_ENABLED)
+        onlyShowWhenScreenOff.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_EDGE_LIGHTING_ONLY_SCREEN_OFF,
+            true
+        )
+        isAmbientDisplayEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_AMBIENT_DISPLAY)
+        isAmbientShowLockScreenEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_AMBIENT_SHOW_LOCK_SCREEN)
+        skipSilentNotifications.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_SKIP_SILENT, true)
+        skipPersistentNotifications.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_EDGE_LIGHTING_SKIP_PERSISTENT)
+
+        notificationLightingStyle.value = settingsRepository.getNotificationLightingStyle()
+        notificationLightingColorMode.value = settingsRepository.getNotificationLightingColorMode()
+        notificationLightingCustomColor.intValue = settingsRepository.getInt(
+            SettingsRepository.KEY_EDGE_LIGHTING_CUSTOM_COLOR,
+            0xFF6200EE.toInt()
+        )
+        notificationLightingPulseCount.value =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_PULSE_COUNT, 1f)
+        notificationLightingPulseDuration.value =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_PULSE_DURATION, 3000f)
+        notificationLightingIndicatorX.value =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_INDICATOR_X, 50f)
+        notificationLightingIndicatorY.value =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_INDICATOR_Y, 2f)
+        isAodEnabled.value = settingsRepository.isAodEnabled()
+
+        isRootEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_USE_ROOT)
+
+        if (isRootEnabled.value) {
+            isRootAvailable.value = com.brittytino.patchwork.utils.RootUtils.isRootAvailable()
+            isRootPermissionGranted.value =
+                com.brittytino.patchwork.utils.RootUtils.isRootPermissionGranted()
+        } else {
+            isRootAvailable.value = false
+            isRootPermissionGranted.value = false
+        }
+
+        notificationLightingIndicatorScale.value =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_INDICATOR_SCALE, 1.0f)
         notificationLightingGlowSides.value = settingsRepository.getNotificationLightingGlowSides()
-        
+
         MapsState.isEnabled = isMapsPowerSavingEnabled.value
         hapticFeedbackType.value = settingsRepository.getHapticFeedbackType()
         defaultTab.value = settingsRepository.getDIYTab()
         checkCaffeinateActive(context)
-        
+
         // Button Remap & Migration
-        isButtonRemapEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_BUTTON_REMAP_ENABLED, 
-            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_VOLUME_TOGGLE_ENABLED))
-        isButtonRemapUseShizuku.value = settingsRepository.getBoolean(SettingsRepository.KEY_BUTTON_REMAP_USE_SHIZUKU)
-        shizukuDetectedDevicePath.value = settingsRepository.getString(SettingsRepository.KEY_SHIZUKU_DETECTED_DEVICE_PATH)
-            
-        val oldTrigger = settingsRepository.getString(SettingsRepository.KEY_FLASHLIGHT_TRIGGER_BUTTON, "Volume Up")
-        
-        val hasLegacyToggle = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_VOLUME_TOGGLE_ENABLED, false) // Default false here as key check logic
-        
-        volumeUpActionOff.value = settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_VOL_UP_ACTION_OFF, 
-            settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_VOL_UP_ACTION, 
-            if (oldTrigger == "Volume Up" && hasLegacyToggle) "Toggle flashlight" else "None")) ?: "None"
-        
-        volumeDownActionOff.value = settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION_OFF, 
-            settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION, 
-            if (oldTrigger == "Volume Down" && hasLegacyToggle) "Toggle flashlight" else "None")) ?: "None"
-            
-        volumeUpActionOn.value = settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_VOL_UP_ACTION_ON, "None") ?: "None"
-        volumeDownActionOn.value = settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION_ON, "None") ?: "None"
-            
-        val hapticName = settingsRepository.getString(SettingsRepository.KEY_BUTTON_REMAP_HAPTIC_TYPE, 
-            settingsRepository.getString(SettingsRepository.KEY_FLASHLIGHT_HAPTIC_TYPE, HapticFeedbackType.DOUBLE.name))
-        
+        isButtonRemapEnabled.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_BUTTON_REMAP_ENABLED,
+            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_VOLUME_TOGGLE_ENABLED)
+        )
+        isButtonRemapUseShizuku.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_BUTTON_REMAP_USE_SHIZUKU)
+        shizukuDetectedDevicePath.value =
+            settingsRepository.getString(SettingsRepository.KEY_SHIZUKU_DETECTED_DEVICE_PATH)
+
+        val oldTrigger = settingsRepository.getString(
+            SettingsRepository.KEY_FLASHLIGHT_TRIGGER_BUTTON,
+            "Volume Up"
+        )
+
+        val hasLegacyToggle = settingsRepository.getBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_VOLUME_TOGGLE_ENABLED,
+            false
+        ) // Default false here as key check logic
+
+        volumeUpActionOff.value = settingsRepository.getString(
+            SettingsRepository.KEY_BUTTON_REMAP_VOL_UP_ACTION_OFF,
+            settingsRepository.getString(
+                SettingsRepository.KEY_BUTTON_REMAP_VOL_UP_ACTION,
+                if (oldTrigger == "Volume Up" && hasLegacyToggle) "Toggle flashlight" else "None"
+            )
+        ) ?: "None"
+
+        volumeDownActionOff.value = settingsRepository.getString(
+            SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION_OFF,
+            settingsRepository.getString(
+                SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION,
+                if (oldTrigger == "Volume Down" && hasLegacyToggle) "Toggle flashlight" else "None"
+            )
+        ) ?: "None"
+
+        volumeUpActionOn.value = settingsRepository.getString(
+            SettingsRepository.KEY_BUTTON_REMAP_VOL_UP_ACTION_ON,
+            "None"
+        ) ?: "None"
+        volumeDownActionOn.value = settingsRepository.getString(
+            SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION_ON,
+            "None"
+        ) ?: "None"
+
+        val hapticName = settingsRepository.getString(
+            SettingsRepository.KEY_BUTTON_REMAP_HAPTIC_TYPE,
+            settingsRepository.getString(
+                SettingsRepository.KEY_FLASHLIGHT_HAPTIC_TYPE,
+                HapticFeedbackType.DOUBLE.name
+            )
+        )
+
         remapHapticType.value = try {
             val type = HapticFeedbackType.valueOf(hapticName ?: HapticFeedbackType.DOUBLE.name)
             if (type.name == "LONG") HapticFeedbackType.DOUBLE else type
         } catch (e: Exception) {
             HapticFeedbackType.DOUBLE
         }
-        
-        isDynamicNightLightEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_DYNAMIC_NIGHT_LIGHT_ENABLED)
+
+        isDynamicNightLightEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_DYNAMIC_NIGHT_LIGHT_ENABLED)
         loadSnoozeChannels(context)
-        isFlashlightAlwaysTurnOffEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_ALWAYS_TURN_OFF_ENABLED)
-        isFlashlightFadeEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_FADE_ENABLED)
-        isFlashlightAdjustEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_ADJUST_INTENSITY_ENABLED)
-        isFlashlightGlobalEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_GLOBAL_ENABLED)
-        isFlashlightLiveUpdateEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_LIVE_UPDATE_ENABLED, true)
-        flashlightLastIntensity.value = settingsRepository.getInt(SettingsRepository.KEY_FLASHLIGHT_LAST_INTENSITY, 1)
-        isFlashlightPulseEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_PULSE_ENABLED)
-        isFlashlightPulseFacedownOnly.value = settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_PULSE_FACEDOWN_ONLY, true)
-        isPitchBlackThemeEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_PITCH_BLACK_THEME_ENABLED)
+        loadMapsChannels(context)
+        isSnoozeHeadsUpEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_SNOOZE_HEADS_UP_ENABLED)
+        isFlashlightAlwaysTurnOffEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_ALWAYS_TURN_OFF_ENABLED)
+        isFlashlightFadeEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_FADE_ENABLED)
+        isFlashlightAdjustEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_ADJUST_INTENSITY_ENABLED)
+        isFlashlightGlobalEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_GLOBAL_ENABLED)
+        isFlashlightLiveUpdateEnabled.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_LIVE_UPDATE_ENABLED,
+            true
+        )
+        flashlightLastIntensity.value =
+            settingsRepository.getInt(SettingsRepository.KEY_FLASHLIGHT_LAST_INTENSITY, 1)
+        isFlashlightPulseEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FLASHLIGHT_PULSE_ENABLED)
+        isFlashlightPulseFacedownOnly.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_PULSE_FACEDOWN_ONLY,
+            true
+        )
+        isFlashlightPulseUseLightingApps.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_PULSE_SAME_AS_LIGHTING,
+            true
+        )
+        isPitchBlackThemeEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_PITCH_BLACK_THEME_ENABLED)
 
-        keyboardHeight.floatValue = settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_HEIGHT, 54f)
-        keyboardBottomPadding.floatValue = settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_BOTTOM_PADDING, 0f)
-        keyboardRoundness.floatValue = settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_ROUNDNESS, 24f)
-        isKeyboardHapticsEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_HAPTICS_ENABLED, true)
-        isKeyboardFunctionsBottom.value = settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_FUNCTIONS_BOTTOM, false)
-        keyboardFunctionsPadding.floatValue = settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_FUNCTIONS_PADDING, 0f)
-        keyboardHapticStrength.floatValue = settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_HAPTIC_STRENGTH, 0.5f)
+        keyboardHeight.floatValue =
+            settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_HEIGHT, 54f)
+        keyboardBottomPadding.floatValue =
+            settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_BOTTOM_PADDING, 0f)
+        keyboardRoundness.floatValue =
+            settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_ROUNDNESS, 24f)
+        isKeyboardHapticsEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_HAPTICS_ENABLED, true)
+        isKeyboardFunctionsBottom.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_FUNCTIONS_BOTTOM, false)
+        keyboardFunctionsPadding.floatValue =
+            settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_FUNCTIONS_PADDING, 0f)
+        keyboardHapticStrength.floatValue =
+            settingsRepository.getFloat(SettingsRepository.KEY_KEYBOARD_HAPTIC_STRENGTH, 0.5f)
         keyboardShape.intValue = settingsRepository.getInt(SettingsRepository.KEY_KEYBOARD_SHAPE, 0)
-        isKeyboardAlwaysDark.value = settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_ALWAYS_DARK, false)
-        isKeyboardPitchBlack.value = settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_PITCH_BLACK, false)
-        isKeyboardClipboardEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_CLIPBOARD_ENABLED, true)
+        isKeyboardAlwaysDark.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_ALWAYS_DARK, false)
+        isKeyboardPitchBlack.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_PITCH_BLACK, false)
+        isKeyboardClipboardEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_CLIPBOARD_ENABLED, true)
+        isUserDictionaryEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_USER_DICTIONARY_ENABLED, false)
+        isLongPressSymbolsEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_KEYBOARD_LONG_PRESS_SYMBOLS, false)
 
-        isAirSyncConnectionEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_AIRSYNC_CONNECTION_ENABLED)
-        macBatteryLevel.intValue = settingsRepository.getInt(SettingsRepository.KEY_MAC_BATTERY_LEVEL, -1)
-        isMacBatteryCharging.value = settingsRepository.getBoolean(SettingsRepository.KEY_MAC_BATTERY_IS_CHARGING, false)
-        macBatteryLastUpdated.value = settingsRepository.getLong(SettingsRepository.KEY_MAC_BATTERY_LAST_UPDATED, 0L)
-        isMacConnected.value = settingsRepository.getBoolean(SettingsRepository.KEY_AIRSYNC_MAC_CONNECTED, false)
+        isAirSyncConnectionEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_AIRSYNC_CONNECTION_ENABLED)
+        macBatteryLevel.intValue =
+            settingsRepository.getInt(SettingsRepository.KEY_MAC_BATTERY_LEVEL, -1)
+        isMacBatteryCharging.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_MAC_BATTERY_IS_CHARGING, false)
+        macBatteryLastUpdated.value =
+            settingsRepository.getLong(SettingsRepository.KEY_MAC_BATTERY_LAST_UPDATED, 0L)
+        isMacConnected.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_AIRSYNC_MAC_CONNECTED, false)
 
-        isBluetoothDevicesEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_SHOW_BLUETOOTH_DEVICES, false)
-        isBluetoothDevicesEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_SHOW_BLUETOOTH_DEVICES, false)
+        isBluetoothDevicesEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_SHOW_BLUETOOTH_DEVICES, false)
+        isBluetoothDevicesEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_SHOW_BLUETOOTH_DEVICES, false)
         batteryWidgetMaxDevices.intValue = settingsRepository.getBatteryWidgetMaxDevices()
-        isBatteryWidgetBackgroundEnabled.value = settingsRepository.isBatteryWidgetBackgroundEnabled()
+        isBatteryWidgetBackgroundEnabled.value =
+            settingsRepository.isBatteryWidgetBackgroundEnabled()
+        isCallVibrationsEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_CALL_VIBRATIONS_ENABLED)
 
-        isScreenLockedSecurityEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_SCREEN_LOCKED_SECURITY_ENABLED)
+        isScreenLockedSecurityEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_SCREEN_LOCKED_SECURITY_ENABLED)
         isDeviceAdminEnabled.value = isDeviceAdminActive(context)
-        
-        isAutoUpdateEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_AUTO_UPDATE_ENABLED, true)
-        isUpdateNotificationEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_UPDATE_NOTIFICATION_ENABLED, true)
-        lastUpdateCheckTime = settingsRepository.getLong(SettingsRepository.KEY_LAST_UPDATE_CHECK_TIME)
-        isAppLockEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_APP_LOCK_ENABLED)
-        isFreezeWhenLockedEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_FREEZE_WHEN_LOCKED_ENABLED)
-        freezeLockDelayIndex.intValue = settingsRepository.getInt(SettingsRepository.KEY_FREEZE_LOCK_DELAY_INDEX, 1)
+
+        isAutoUpdateEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_AUTO_UPDATE_ENABLED, true)
+        isUpdateNotificationEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_UPDATE_NOTIFICATION_ENABLED, true)
+        lastUpdateCheckTime =
+            settingsRepository.getLong(SettingsRepository.KEY_LAST_UPDATE_CHECK_TIME)
+        isAppLockEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_APP_LOCK_ENABLED)
+        isFreezeWhenLockedEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FREEZE_WHEN_LOCKED_ENABLED)
+        isFreezeDontFreezeActiveAppsEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_FREEZE_DONT_FREEZE_ACTIVE_APPS)
+        freezeLockDelayIndex.intValue =
+            settingsRepository.getInt(SettingsRepository.KEY_FREEZE_LOCK_DELAY_INDEX, 1)
         freezeAutoExcludedApps.value = settingsRepository.getFreezeAutoExcludedApps()
-        
-        // Hidden features
-        isAppBehaviorControllerEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_APP_BEHAVIOR_CONTROLLER_ENABLED)
-        isSmartAppCooldownEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_SMART_APP_COOLDOWN_ENABLED)
-        isIdleAppAutoActionEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_IDLE_APP_AUTO_ACTION_ENABLED)
-        isActionHistoryEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_ACTION_HISTORY_ENABLED)
-        isSystemSnapshotsEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_SYSTEM_SNAPSHOTS_ENABLED)
-        
-        isDeveloperModeEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_DEVELOPER_MODE_ENABLED)
-        isPreReleaseCheckEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_CHECK_PRE_RELEASES_ENABLED)
+        isDeveloperModeEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_DEVELOPER_MODE_ENABLED)
+        isPreReleaseCheckEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_CHECK_PRE_RELEASES_ENABLED)
         pinnedFeatureKeys.value = settingsRepository.getPinnedFeatures()
+        isLikeSongToastEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_LIKE_SONG_TOAST_ENABLED, true)
+        isLikeSongAodOverlayEnabled.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_LIKE_SONG_AOD_OVERLAY_ENABLED,
+            false
+        )
+        isAmbientMusicGlanceEnabled.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_AMBIENT_MUSIC_GLANCE_ENABLED,
+            false
+        )
+        isAmbientMusicGlanceDockedModeEnabled.value = settingsRepository.getBoolean(
+            SettingsRepository.KEY_AMBIENT_MUSIC_GLANCE_DOCKED_MODE,
+            false
+        )
+        isCalendarSyncEnabled.value =
+            settingsRepository.getBoolean(SettingsRepository.KEY_CALENDAR_SYNC_ENABLED, false)
+        isCalendarSyncPeriodicEnabled.value = settingsRepository.isCalendarSyncPeriodicEnabled()
+        isBatteryNotificationEnabled.value = settingsRepository.isBatteryNotificationEnabled()
+        selectedCalendarIds.value = settingsRepository.getCalendarSyncSelectedCalendars()
+        isNotificationGlanceEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_NOTIFICATION_GLANCE_ENABLED)
+        isAodForceTurnOffEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_AOD_FORCE_TURN_OFF_ENABLED)
+        isNotificationGlanceSameAsLightingEnabled.value = settingsRepository.getBoolean(SettingsRepository.KEY_NOTIFICATION_GLANCE_SAME_AS_LIGHTING, true)
+
+        refreshTrackedUpdates(context)
+        if (isBatteryNotificationEnabled.value) {
+            startBatteryNotificationService(context)
+        }
+    }
+
+    private fun startBatteryNotificationService(context: Context) {
+        val intent = Intent(context, com.brittytino.patchwork.services.BatteryNotificationService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    private fun stopBatteryNotificationService(context: Context) {
+        val intent = Intent(context, com.brittytino.patchwork.services.BatteryNotificationService::class.java)
+        context.stopService(intent)
+    }
+
+    fun setBatteryNotificationEnabled(enabled: Boolean, context: Context) {
+        isBatteryNotificationEnabled.value = enabled
+        settingsRepository.setBatteryNotificationEnabled(enabled)
+        if (enabled) {
+            startBatteryNotificationService(context)
+        } else {
+            stopBatteryNotificationService(context)
+        }
     }
 
     fun onSearchQueryChanged(query: String, context: Context) {
@@ -451,6 +859,66 @@ class MainViewModel : ViewModel() {
         check(context)
     }
 
+    fun setUserDictionaryEnabled(enabled: Boolean, context: Context) {
+        isUserDictionaryEnabled.value = enabled
+        settingsRepository.setUserDictionaryEnabled(enabled)
+    }
+
+    fun setLongPressSymbolsEnabled(enabled: Boolean, context: Context) {
+        isLongPressSymbolsEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_KEYBOARD_LONG_PRESS_SYMBOLS, enabled)
+    }
+    
+    fun loadUserDictionaryWords(context: Context) {
+        val ims = context.applicationContext as? com.brittytino.patchwork.ime.EssentialsInputMethodService
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = java.io.File(context.filesDir, "user_dict.txt")
+            if (file.exists()) {
+                val map = mutableMapOf<String, Long>()
+                file.forEachLine { line ->
+                    val parts = line.split(" ")
+                    if (parts.size >= 2) {
+                         map[parts[0]] = parts[1].toLongOrNull() ?: 1L
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    userDictionaryWords.value = map
+                }
+            } else {
+                 withContext(Dispatchers.Main) {
+                    userDictionaryWords.value = emptyMap()
+                }
+            }
+        }
+    }
+    
+    fun deleteUserWord(word: String, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // Read, remove, write
+            val file = java.io.File(context.filesDir, "user_dict.txt")
+            if (file.exists()) {
+                val lines = file.readLines().filter { !it.startsWith("$word ") }
+                file.writeText(lines.joinToString("\n"))
+                loadUserDictionaryWords(context)
+                settingsRepository.putLong(SettingsRepository.KEY_USER_DICT_LAST_UPDATE, System.currentTimeMillis())
+            }
+        }
+    }
+
+    fun clearUserDictionary(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = java.io.File(context.filesDir, "user_dict.txt")
+            if (file.exists()) {
+                file.delete()
+                withContext(Dispatchers.Main) {
+                    userDictionaryWords.value = emptyMap()
+                }
+                settingsRepository.putLong(SettingsRepository.KEY_USER_DICT_LAST_UPDATE, System.currentTimeMillis())
+            }
+        }
+    }
+
     fun setPitchBlackThemeEnabled(enabled: Boolean, context: Context) {
         isPitchBlackThemeEnabled.value = enabled
         settingsRepository.putBoolean(SettingsRepository.KEY_PITCH_BLACK_THEME_ENABLED, enabled)
@@ -458,7 +926,7 @@ class MainViewModel : ViewModel() {
 
     fun checkForUpdates(context: Context, manual: Boolean = false) {
         if (isCheckingUpdate.value) return
-        
+
         if (!manual) {
             if (!isAutoUpdateEnabled.value) return
             val currentTime = System.currentTimeMillis()
@@ -474,21 +942,29 @@ class MainViewModel : ViewModel() {
                 } catch (e: Exception) {
                     "0.0"
                 } ?: "0.0"
-                
-                val updateInfoResult = updateRepository.checkForUpdates(isPreReleaseCheckEnabled.value, currentVersion)
+
+                val updateInfoResult =
+                    updateRepository.checkForUpdates(isPreReleaseCheckEnabled.value, currentVersion)
 
                 if (updateInfoResult != null) {
                     updateInfo.value = updateInfoResult
                     isUpdateAvailable.value = updateInfoResult.isUpdateAvailable
-                    
+
                     if (updateInfoResult.isUpdateAvailable && updateInfoResult.downloadUrl.isNotEmpty()) {
                         if (isUpdateNotificationEnabled.value) {
-                            UpdateNotificationHelper.showUpdateNotification(context, updateInfoResult.versionName, updateInfoResult.downloadUrl)
+                            UpdateNotificationHelper.showUpdateNotification(
+                                context,
+                                updateInfoResult.versionName,
+                                updateInfoResult.downloadUrl
+                            )
                         }
                     }
-                    
+
                     lastUpdateCheckTime = System.currentTimeMillis()
-                    settingsRepository.putLong(SettingsRepository.KEY_LAST_UPDATE_CHECK_TIME, lastUpdateCheckTime)
+                    settingsRepository.putLong(
+                        SettingsRepository.KEY_LAST_UPDATE_CHECK_TIME,
+                        lastUpdateCheckTime
+                    )
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -496,6 +972,16 @@ class MainViewModel : ViewModel() {
                 isCheckingUpdate.value = false
             }
         }
+    }
+
+    fun refreshTrackedUpdates(context: Context) {
+        val trackedRepos = settingsRepository.getTrackedRepos()
+        if (trackedRepos.isEmpty()) {
+            hasPendingUpdates.value = false
+            return
+        }
+
+        hasPendingUpdates.value = trackedRepos.any { it.isUpdateAvailable }
     }
 
     private fun isDeviceAdminActive(context: Context): Boolean {
@@ -506,7 +992,10 @@ class MainViewModel : ViewModel() {
         val adminComponent = ComponentName(context, SecurityDeviceAdminReceiver::class.java)
         val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
             putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-            putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, context.getString(R.string.perm_device_admin_explanation))
+            putExtra(
+                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                context.getString(R.string.perm_device_admin_explanation)
+            )
         }
         if (context is Activity) {
             context.startActivity(intent)
@@ -516,6 +1005,15 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    fun requestReadPhoneStatePermission(activity: Activity) {
+        androidx.core.app.ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.READ_PHONE_STATE),
+            1005
+        )
+    }
+
+
     fun setWidgetEnabled(enabled: Boolean, context: Context) {
         isWidgetEnabled.value = enabled
         settingsRepository.putBoolean(SettingsRepository.KEY_WIDGET_ENABLED, enabled)
@@ -523,7 +1021,10 @@ class MainViewModel : ViewModel() {
 
     fun setStatusBarIconControlEnabled(enabled: Boolean, context: Context) {
         isStatusBarIconControlEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_STATUS_BAR_ICON_CONTROL_ENABLED, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_STATUS_BAR_ICON_CONTROL_ENABLED,
+            enabled
+        )
     }
 
     fun setMapsPowerSavingEnabled(enabled: Boolean, context: Context) {
@@ -549,9 +1050,12 @@ class MainViewModel : ViewModel() {
 
     fun setAmbientShowLockScreenEnabled(enabled: Boolean, context: Context) {
         isAmbientShowLockScreenEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_EDGE_LIGHTING_AMBIENT_SHOW_LOCK_SCREEN, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_EDGE_LIGHTING_AMBIENT_SHOW_LOCK_SCREEN,
+            enabled
+        )
     }
-    
+
     fun setSkipSilentNotifications(enabled: Boolean, context: Context) {
         skipSilentNotifications.value = enabled
         settingsRepository.putBoolean(SettingsRepository.KEY_EDGE_LIGHTING_SKIP_SILENT, enabled)
@@ -582,6 +1086,11 @@ class MainViewModel : ViewModel() {
         settingsRepository.putBoolean(SettingsRepository.KEY_BUTTON_REMAP_ENABLED, enabled)
     }
 
+    fun setCallVibrationsEnabled(enabled: Boolean) {
+        isCallVibrationsEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_CALL_VIBRATIONS_ENABLED, enabled)
+    }
+
     fun setButtonRemapUseShizuku(enabled: Boolean, context: Context) {
         isButtonRemapUseShizuku.value = enabled
         settingsRepository.putBoolean(SettingsRepository.KEY_BUTTON_REMAP_USE_SHIZUKU, enabled)
@@ -594,7 +1103,10 @@ class MainViewModel : ViewModel() {
 
     fun setVolumeDownActionOff(action: String, context: Context) {
         volumeDownActionOff.value = action
-        settingsRepository.putString(SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION_OFF, action)
+        settingsRepository.putString(
+            SettingsRepository.KEY_BUTTON_REMAP_VOL_DOWN_ACTION_OFF,
+            action
+        )
     }
 
     fun setVolumeUpActionOn(action: String, context: Context) {
@@ -622,41 +1134,215 @@ class MainViewModel : ViewModel() {
         settingsRepository.putBoolean(SettingsRepository.KEY_APP_LOCK_ENABLED, enabled)
     }
 
+    val isLikeSongToastEnabled = mutableStateOf(false)
+
+    fun setLikeSongToastEnabled(enabled: Boolean) {
+        isLikeSongToastEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_LIKE_SONG_TOAST_ENABLED, enabled)
+    }
+
+    val isLikeSongAodOverlayEnabled = mutableStateOf(false)
+
+    fun setLikeSongAodOverlayEnabled(enabled: Boolean) {
+        isLikeSongAodOverlayEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_LIKE_SONG_AOD_OVERLAY_ENABLED, enabled)
+    }
+
+    val isAmbientMusicGlanceEnabled = mutableStateOf(false)
+
+    fun setAmbientMusicGlanceEnabled(enabled: Boolean) {
+        isAmbientMusicGlanceEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_AMBIENT_MUSIC_GLANCE_ENABLED, enabled)
+    }
+
+    fun updateFontScale(scale: Float) {
+        fontScale.floatValue = scale
+    }
+
+    fun saveFontScale() {
+        settingsRepository.setFontScale(fontScale.floatValue)
+    }
+
+    fun setFontScale(scale: Float) {
+        fontScale.floatValue = scale
+        settingsRepository.setFontScale(scale)
+    }
+
+    fun setFontWeight(weight: Int) {
+        fontWeight.intValue = weight
+        settingsRepository.setFontWeight(weight)
+    }
+
+    fun setAnimationScale(key: String, scale: Float) {
+        when (key) {
+            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE -> animatorDurationScale.floatValue = scale
+            android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE -> transitionAnimationScale.floatValue = scale
+            android.provider.Settings.Global.WINDOW_ANIMATION_SCALE -> windowAnimationScale.floatValue = scale
+        }
+        settingsRepository.setAnimationScale(key, scale)
+    }
+
+    fun resetTextToDefault() {
+        setFontScale(1.0f)
+        setFontWeight(0)
+    }
+
+    fun resetAnimationsToDefault() {
+        setAnimationScale(android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f)
+        setAnimationScale(android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE, 1.0f)
+        setAnimationScale(android.provider.Settings.Global.WINDOW_ANIMATION_SCALE, 1.0f)
+    }
+
+    fun updateSmallestWidth(width: Int) {
+        smallestWidth.intValue = width
+    }
+
+    fun saveSmallestWidth() {
+        settingsRepository.setSmallestWidth(smallestWidth.intValue)
+    }
+
+    fun setSmallestWidth(width: Int) {
+        smallestWidth.intValue = width
+        settingsRepository.setSmallestWidth(width)
+    }
+
+    fun resetScaleToDefault() {
+        settingsRepository.resetSmallestWidth()
+        smallestWidth.intValue = settingsRepository.getSmallestWidth()
+    }
+
+    fun setAmbientMusicGlanceDockedModeEnabled(enabled: Boolean) {
+        isAmbientMusicGlanceDockedModeEnabled.value = enabled
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_AMBIENT_MUSIC_GLANCE_DOCKED_MODE,
+            enabled
+        )
+    }
+
+    fun setCalendarSyncEnabled(enabled: Boolean, context: Context) {
+        isCalendarSyncEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_CALENDAR_SYNC_ENABLED, enabled)
+        if (enabled) {
+            com.brittytino.patchwork.services.CalendarSyncManager.forceSync(context)
+            if (isCalendarSyncPeriodicEnabled.value) {
+                schedulePeriodicCalendarSync(context)
+            }
+        } else {
+            cancelPeriodicCalendarSync(context)
+        }
+    }
+
+    fun fetchCalendars(context: Context) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_CALENDAR
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val calendars = mutableListOf<CalendarAccount>()
+            val projection = arrayOf(
+                CalendarContract.Calendars._ID,
+                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+                CalendarContract.Calendars.ACCOUNT_NAME
+            )
+
+            context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                projection,
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                val idColumn = cursor.getColumnIndexOrThrow(CalendarContract.Calendars._ID)
+                val nameColumn =
+                    cursor.getColumnIndexOrThrow(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
+                val accountColumn =
+                    cursor.getColumnIndexOrThrow(CalendarContract.Calendars.ACCOUNT_NAME)
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(idColumn)
+                    val name = cursor.getString(nameColumn)
+                    val account = cursor.getString(accountColumn)
+                    calendars.add(
+                        CalendarAccount(
+                            id,
+                            name,
+                            account,
+                            selectedCalendarIds.value.contains(id.toString())
+                        )
+                    )
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                availableCalendars.clear()
+                availableCalendars.addAll(calendars)
+            }
+        }
+    }
+
+    fun toggleCalendarSelection(calendarId: Long) {
+        val currentIds = selectedCalendarIds.value.toMutableSet()
+        val idString = calendarId.toString()
+        if (currentIds.contains(idString)) {
+            currentIds.remove(idString)
+        } else {
+            currentIds.add(idString)
+        }
+        selectedCalendarIds.value = currentIds
+        settingsRepository.saveCalendarSyncSelectedCalendars(currentIds)
+
+        // Update availableCalendars list
+        val index = availableCalendars.indexOfFirst { it.id == calendarId }
+        if (index != -1) {
+            availableCalendars[index] =
+                availableCalendars[index].copy(isSelected = currentIds.contains(idString))
+        }
+    }
+
+    fun setCalendarSyncPeriodicEnabled(enabled: Boolean, context: Context) {
+        isCalendarSyncPeriodicEnabled.value = enabled
+        settingsRepository.setCalendarSyncPeriodicEnabled(enabled)
+        if (enabled && isCalendarSyncEnabled.value) {
+            schedulePeriodicCalendarSync(context)
+        } else {
+            cancelPeriodicCalendarSync(context)
+        }
+    }
+
+    private fun schedulePeriodicCalendarSync(context: Context) {
+        val workRequest =
+            PeriodicWorkRequestBuilder<com.brittytino.patchwork.services.CalendarSyncWorker>(
+                15, java.util.concurrent.TimeUnit.MINUTES
+            ).build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "calendar_sync_work",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            workRequest
+        )
+    }
+
+    private fun cancelPeriodicCalendarSync(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork("calendar_sync_work")
+    }
+
+    fun triggerCalendarSyncNow(context: Context) {
+        com.brittytino.patchwork.services.CalendarSyncManager.forceSync(context)
+    }
+
     fun setFreezeWhenLockedEnabled(enabled: Boolean, context: Context) {
         isFreezeWhenLockedEnabled.value = enabled
         settingsRepository.putBoolean(SettingsRepository.KEY_FREEZE_WHEN_LOCKED_ENABLED, enabled)
     }
 
-    fun setAppBehaviorControllerEnabled(enabled: Boolean, context: Context) {
-        isAppBehaviorControllerEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_APP_BEHAVIOR_CONTROLLER_ENABLED, enabled)
-    }
-
-    fun setSmartAppCooldownEnabled(enabled: Boolean, context: Context) {
-        isSmartAppCooldownEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_SMART_APP_COOLDOWN_ENABLED, enabled)
-    }
-
-    fun setIdleAppAutoActionEnabled(enabled: Boolean, context: Context) {
-        isIdleAppAutoActionEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_IDLE_APP_AUTO_ACTION_ENABLED, enabled)
-        
-        // Auto-start/stop IdleAppEngine monitoring when enabled/disabled
-        if (enabled) {
-            com.brittytino.patchwork.services.IdleAppEngine.getInstance(context).startMonitoring()
-        } else {
-            com.brittytino.patchwork.services.IdleAppEngine.getInstance(context).stopMonitoring()
-        }
-    }
-
-    fun setActionHistoryEnabled(enabled: Boolean, context: Context) {
-        isActionHistoryEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_ACTION_HISTORY_ENABLED, enabled)
-    }
-
-    fun setSystemSnapshotsEnabled(enabled: Boolean, context: Context) {
-        isSystemSnapshotsEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_SYSTEM_SNAPSHOTS_ENABLED, enabled)
+    fun setFreezeDontFreezeActiveAppsEnabled(enabled: Boolean, context: Context) {
+        isFreezeDontFreezeActiveAppsEnabled.value = enabled
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_FREEZE_DONT_FREEZE_ACTIVE_APPS,
+            enabled
+        )
     }
 
     fun setFreezeLockDelayIndex(index: Int, context: Context) {
@@ -681,15 +1367,31 @@ class MainViewModel : ViewModel() {
 
     fun setFlashlightPulseFacedownOnly(enabled: Boolean, context: Context) {
         isFlashlightPulseFacedownOnly.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_FLASHLIGHT_PULSE_FACEDOWN_ONLY, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_PULSE_FACEDOWN_ONLY,
+            enabled
+        )
+    }
+
+    fun setFlashlightPulseUseLightingApps(enabled: Boolean, context: Context) {
+        isFlashlightPulseUseLightingApps.value = enabled
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_PULSE_SAME_AS_LIGHTING,
+            enabled
+        )
     }
 
     // Helper to show the overlay service for testing/triggering
     fun triggerNotificationLighting(context: Context) {
-        val radius = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_CORNER_RADIUS, 20f)
-        val thickness = settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_STROKE_THICKNESS, 8f)
+        val radius =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_CORNER_RADIUS, 20f)
+        val thickness =
+            settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_STROKE_THICKNESS, 8f)
         try {
-            val intent = Intent(context, com.brittytino.patchwork.services.NotificationLightingService::class.java).apply {
+            val intent = Intent(
+                context,
+                NotificationLightingService::class.java
+            ).apply {
                 putExtra("corner_radius_dp", radius)
                 putExtra("stroke_thickness_dp", thickness)
                 putExtra("ignore_screen_state", true)
@@ -698,7 +1400,10 @@ class MainViewModel : ViewModel() {
                 putExtra("custom_color", notificationLightingCustomColor.intValue)
                 putExtra("pulse_count", notificationLightingPulseCount.value.toInt())
                 putExtra("pulse_duration", notificationLightingPulseDuration.value.toLong())
-                putExtra("glow_sides", notificationLightingGlowSides.value.map { it.name }.toTypedArray())
+                putExtra(
+                    "glow_sides",
+                    notificationLightingGlowSides.value.map { it.name }.toTypedArray()
+                )
                 putExtra("indicator_x", notificationLightingIndicatorX.value)
                 putExtra("indicator_y", notificationLightingIndicatorY.value)
                 putExtra("indicator_scale", notificationLightingIndicatorScale.value)
@@ -712,14 +1417,20 @@ class MainViewModel : ViewModel() {
     // Helper to show the overlay service with custom corner radius
     fun triggerNotificationLightingWithRadius(context: Context, cornerRadiusDp: Float) {
         try {
-            val intent = Intent(context, com.brittytino.patchwork.services.NotificationLightingService::class.java).apply {
+            val intent = Intent(
+                context,
+                NotificationLightingService::class.java
+            ).apply {
                 putExtra("corner_radius_dp", cornerRadiusDp)
                 putExtra("is_preview", true)
                 putExtra("ignore_screen_state", true)
                 putExtra("style", notificationLightingStyle.value.name)
                 putExtra("color_mode", notificationLightingColorMode.value.name)
                 putExtra("custom_color", notificationLightingCustomColor.intValue)
-                putExtra("glow_sides", notificationLightingGlowSides.value.map { it.name }.toTypedArray())
+                putExtra(
+                    "glow_sides",
+                    notificationLightingGlowSides.value.map { it.name }.toTypedArray()
+                )
                 putExtra("indicator_x", notificationLightingIndicatorX.value)
                 putExtra("indicator_y", notificationLightingIndicatorY.value)
                 putExtra("indicator_scale", notificationLightingIndicatorScale.value)
@@ -731,7 +1442,7 @@ class MainViewModel : ViewModel() {
     }
 
     // Helper to show the overlay service with custom corner radius and stroke thickness
-    
+
     fun openImeSettings(context: Context) {
         val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -742,9 +1453,17 @@ class MainViewModel : ViewModel() {
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showInputMethodPicker()
     }
-    fun triggerNotificationLightingWithRadiusAndThickness(context: Context, cornerRadiusDp: Float, strokeThicknessDp: Float) {
+
+    fun triggerNotificationLightingWithRadiusAndThickness(
+        context: Context,
+        cornerRadiusDp: Float,
+        strokeThicknessDp: Float
+    ) {
         try {
-            val intent = Intent(context, com.brittytino.patchwork.services.NotificationLightingService::class.java).apply {
+            val intent = Intent(
+                context,
+                NotificationLightingService::class.java
+            ).apply {
                 putExtra("corner_radius_dp", cornerRadiusDp)
                 putExtra("stroke_thickness_dp", strokeThicknessDp)
                 putExtra("is_preview", true)
@@ -752,7 +1471,10 @@ class MainViewModel : ViewModel() {
                 putExtra("style", notificationLightingStyle.value.name)
                 putExtra("color_mode", notificationLightingColorMode.value.name)
                 putExtra("custom_color", notificationLightingCustomColor.intValue)
-                putExtra("glow_sides", notificationLightingGlowSides.value.map { it.name }.toTypedArray())
+                putExtra(
+                    "glow_sides",
+                    notificationLightingGlowSides.value.map { it.name }.toTypedArray()
+                )
                 putExtra("indicator_x", notificationLightingIndicatorX.value)
                 putExtra("indicator_y", notificationLightingIndicatorY.value)
                 putExtra("indicator_scale", notificationLightingIndicatorScale.value)
@@ -763,10 +1485,18 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    
-    fun triggerNotificationLightingForIndicator(context: Context, x: Float, y: Float, scale: Float) {
+
+    fun triggerNotificationLightingForIndicator(
+        context: Context,
+        x: Float,
+        y: Float,
+        scale: Float
+    ) {
         try {
-            val intent = Intent(context, com.brittytino.patchwork.services.NotificationLightingService::class.java).apply {
+            val intent = Intent(
+                context,
+                NotificationLightingService::class.java
+            ).apply {
                 putExtra("indicator_x", x)
                 putExtra("indicator_y", y)
                 putExtra("indicator_scale", scale)
@@ -879,9 +1609,12 @@ class MainViewModel : ViewModel() {
     fun setBluetoothDevicesEnabled(enabled: Boolean, context: Context) {
         isBluetoothDevicesEnabled.value = enabled
         settingsRepository.setBluetoothDevicesEnabled(enabled)
-        
+
         // Trigger widget update to fetch data immediately
-        val intent = Intent(context, com.brittytino.patchwork.services.widgets.BatteriesWidgetReceiver::class.java).apply {
+        val intent = Intent(
+            context,
+            com.brittytino.patchwork.services.widgets.BatteriesWidgetReceiver::class.java
+        ).apply {
             action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
         }
         context.sendBroadcast(intent)
@@ -890,9 +1623,12 @@ class MainViewModel : ViewModel() {
     fun setBatteryWidgetMaxDevices(count: Int, context: Context) {
         batteryWidgetMaxDevices.intValue = count
         settingsRepository.setBatteryWidgetMaxDevices(count)
-        
+
         // Trigger widget update
-        val intent = Intent(context, com.brittytino.patchwork.services.widgets.BatteriesWidgetReceiver::class.java).apply {
+        val intent = Intent(
+            context,
+            com.brittytino.patchwork.services.widgets.BatteriesWidgetReceiver::class.java
+        ).apply {
             action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
         }
         context.sendBroadcast(intent)
@@ -901,14 +1637,16 @@ class MainViewModel : ViewModel() {
     fun setBatteryWidgetBackgroundEnabled(enabled: Boolean, context: Context) {
         isBatteryWidgetBackgroundEnabled.value = enabled
         settingsRepository.setBatteryWidgetBackgroundEnabled(enabled)
-        
+
         // Trigger widget update
-        val intent = Intent(context, com.brittytino.patchwork.services.widgets.BatteriesWidgetReceiver::class.java).apply {
+        val intent = Intent(
+            context,
+            com.brittytino.patchwork.services.widgets.BatteriesWidgetReceiver::class.java
+        ).apply {
             action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
         }
         context.sendBroadcast(intent)
     }
-
 
 
     private fun isAccessibilityServiceEnabled(context: Context): Boolean {
@@ -930,7 +1668,10 @@ class MainViewModel : ViewModel() {
     fun requestLocationPermission(activity: androidx.activity.ComponentActivity) {
         androidx.core.app.ActivityCompat.requestPermissions(
             activity,
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
             1003
         )
     }
@@ -946,13 +1687,23 @@ class MainViewModel : ViewModel() {
     }
 
     fun requestBluetoothPermission(activity: androidx.activity.ComponentActivity) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            androidx.core.app.ActivityCompat.requestPermissions(
-                activity,
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN),
-                1005
-            )
-        }
+        androidx.core.app.ActivityCompat.requestPermissions(
+            activity,
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
+            } else {
+                arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)
+            },
+            1005
+        )
+    }
+
+    fun requestCalendarPermission(activity: androidx.activity.ComponentActivity) {
+        androidx.core.app.ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.READ_CALENDAR),
+            1006
+        )
     }
 
     fun requestNotificationPermission(activity: androidx.activity.ComponentActivity) {
@@ -1051,8 +1802,24 @@ class MainViewModel : ViewModel() {
         return settingsRepository.loadNotificationLightingSelectedApps()
     }
 
-    fun updateNotificationLightingAppEnabled(context: Context, packageName: String, enabled: Boolean) {
+    fun updateNotificationLightingAppEnabled(
+        context: Context,
+        packageName: String,
+        enabled: Boolean
+    ) {
         settingsRepository.updateNotificationLightingAppSelection(packageName, enabled)
+    }
+
+    fun loadFlashlightPulseSelectedApps(context: Context): List<AppSelection> {
+        return settingsRepository.loadFlashlightPulseSelectedApps()
+    }
+
+    fun saveFlashlightPulseSelectedApps(context: Context, apps: List<AppSelection>) {
+        settingsRepository.saveFlashlightPulseSelectedApps(apps)
+    }
+
+    fun updateFlashlightPulseAppEnabled(context: Context, packageName: String, enabled: Boolean) {
+        settingsRepository.updateFlashlightPulseAppSelection(packageName, enabled)
     }
 
     // Notification Lighting Corner Radius Methods
@@ -1066,11 +1833,17 @@ class MainViewModel : ViewModel() {
 
     // Notification Lighting Stroke Thickness Methods
     fun saveNotificationLightingStrokeThickness(context: Context, thicknessDp: Float) {
-        settingsRepository.putFloat(SettingsRepository.KEY_EDGE_LIGHTING_STROKE_THICKNESS, thicknessDp)
+        settingsRepository.putFloat(
+            SettingsRepository.KEY_EDGE_LIGHTING_STROKE_THICKNESS,
+            thicknessDp
+        )
     }
 
     fun loadNotificationLightingStrokeThickness(context: Context): Float {
-        return settingsRepository.getFloat(SettingsRepository.KEY_EDGE_LIGHTING_STROKE_THICKNESS, 8f)
+        return settingsRepository.getFloat(
+            SettingsRepository.KEY_EDGE_LIGHTING_STROKE_THICKNESS,
+            8f
+        )
     }
 
     // Dynamic Night Light App Selection Methods
@@ -1102,7 +1875,10 @@ class MainViewModel : ViewModel() {
     // Freeze App Selection Methods
     fun saveFreezeSelectedApps(context: Context, apps: List<AppSelection>) {
         settingsRepository.saveFreezeSelectedApps(apps)
-        refreshFreezePickedApps(context, silent = false) // Full refresh if list structure changes significantly
+        refreshFreezePickedApps(
+            context,
+            silent = false
+        ) // Full refresh if list structure changes significantly
     }
 
     fun loadFreezeSelectedApps(context: Context): List<AppSelection> {
@@ -1114,7 +1890,11 @@ class MainViewModel : ViewModel() {
         refreshFreezePickedApps(context, silent = true)
     }
 
-    fun updateFreezeAppAutoFreeze(context: Context, packageName: String, autoFreezeEnabled: Boolean) {
+    fun updateFreezeAppAutoFreeze(
+        context: Context,
+        packageName: String,
+        autoFreezeEnabled: Boolean
+    ) {
         val currentSet = freezeAutoExcludedApps.value.toMutableSet()
         if (autoFreezeEnabled) {
             currentSet.remove(packageName)
@@ -1122,9 +1902,9 @@ class MainViewModel : ViewModel() {
             currentSet.add(packageName)
         }
         freezeAutoExcludedApps.value = currentSet
-        
+
         settingsRepository.saveFreezeAutoExcludedApps(currentSet)
-        
+
         refreshFreezePickedApps(context, silent = true)
     }
 
@@ -1137,17 +1917,18 @@ class MainViewModel : ViewModel() {
                     // Only load apps that are actually marked as secondary selected (picked)
                     val selections = loadFreezeSelectedApps(context).filter { it.isEnabled }
                     if (selections.isEmpty()) return@withContext emptyList()
-                    
+
                     // Efficiently load only the apps that are actually marked as secondary selected (picked)
                     val pickedPkgNames = selections.map { it.packageName }
                     val relevantApps = AppUtil.getAppsByPackageNames(context, pickedPkgNames)
-                    
+
                     val merged = AppUtil.mergeWithSavedApps(relevantApps, selections)
                     val currentExcluded = freezeAutoExcludedApps.value
-                    
+
                     // Cleanup: remove package names that are no longer picked (still on main because it updates state)
-                    val filteredExcluded = currentExcluded.filter { pickedPkgNames.contains(it) }.toSet()
-                    
+                    val filteredExcluded =
+                        currentExcluded.filter { pickedPkgNames.contains(it) }.toSet()
+
                     // Prepare final list in background
                     merged.map { it.copy(isEnabled = !filteredExcluded.contains(it.packageName)) }
                         .sortedBy { it.appName.lowercase() }
@@ -1155,12 +1936,13 @@ class MainViewModel : ViewModel() {
 
                 // Final state update on Main
                 freezePickedApps.value = result
-                
+
                 // Exclude check (this part still needs to update state if cleaned up)
                 val currentExcluded = freezeAutoExcludedApps.value
                 val selections = loadFreezeSelectedApps(context).filter { it.isEnabled }
                 val pickedPkgNames = selections.map { it.packageName }
-                val filteredExcluded = currentExcluded.filter { pickedPkgNames.contains(it) }.toSet()
+                val filteredExcluded =
+                    currentExcluded.filter { pickedPkgNames.contains(it) }.toSet()
                 if (filteredExcluded.size != currentExcluded.size) {
                     freezeAutoExcludedApps.value = filteredExcluded
                     settingsRepository.saveFreezeAutoExcludedApps(filteredExcluded)
@@ -1197,13 +1979,14 @@ class MainViewModel : ViewModel() {
 
     fun launchAndUnfreezeApp(context: Context, packageName: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val isFrozen = com.brittytino.patchwork.utils.FreezeManager.isAppFrozen(context, packageName)
+            val isFrozen =
+                com.brittytino.patchwork.utils.FreezeManager.isAppFrozen(context, packageName)
             if (isFrozen) {
                 com.brittytino.patchwork.utils.FreezeManager.unfreezeApp(context, packageName)
                 // Small delay to ensure system registers the change before launch
                 delay(100)
             }
-            
+
             val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
             if (launchIntent != null) {
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1236,11 +2019,11 @@ class MainViewModel : ViewModel() {
     fun loadSnoozeChannels(context: Context) {
         val discovered = settingsRepository.loadSnoozeDiscoveredChannels()
         val blocked = settingsRepository.loadSnoozeBlockedChannels()
-        
+
         val channels = discovered.map { channel ->
             channel.copy(isBlocked = blocked.contains(channel.id))
         }
-        
+
         snoozeChannels.value = channels.distinctBy { it.id }.sortedBy { it.name }
     }
 
@@ -1255,9 +2038,37 @@ class MainViewModel : ViewModel() {
         loadSnoozeChannels(context)
     }
 
+    private fun loadMapsChannels(context: Context) {
+        val discovered = settingsRepository.loadMapsDiscoveredChannels()
+        val detectionIds = settingsRepository.loadMapsDetectionChannels()
+
+        mapsChannels.value = discovered.map { channel ->
+            channel.copy(isEnabled = detectionIds.contains(channel.id))
+        }.distinctBy { it.id }.sortedBy { it.name }
+    }
+
+    fun setMapsChannelDetected(channelId: String, detected: Boolean, context: Context) {
+        val currentDetected = settingsRepository.loadMapsDetectionChannels().toMutableSet()
+        if (detected) {
+            currentDetected.add(channelId)
+        } else {
+            currentDetected.remove(channelId)
+        }
+        settingsRepository.saveMapsDetectionChannels(currentDetected)
+        loadMapsChannels(context)
+    }
+
+    fun setSnoozeHeadsUpEnabled(enabled: Boolean, context: Context) {
+        isSnoozeHeadsUpEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_SNOOZE_HEADS_UP_ENABLED, enabled)
+    }
+
     fun setFlashlightAlwaysTurnOffEnabled(enabled: Boolean, context: Context) {
         isFlashlightAlwaysTurnOffEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_FLASHLIGHT_ALWAYS_TURN_OFF_ENABLED, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_ALWAYS_TURN_OFF_ENABLED,
+            enabled
+        )
     }
 
     fun setFlashlightFadeEnabled(enabled: Boolean, context: Context) {
@@ -1267,7 +2078,10 @@ class MainViewModel : ViewModel() {
 
     fun setFlashlightAdjustEnabled(enabled: Boolean, context: Context) {
         isFlashlightAdjustEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_FLASHLIGHT_ADJUST_INTENSITY_ENABLED, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_ADJUST_INTENSITY_ENABLED,
+            enabled
+        )
     }
 
     fun setFlashlightGlobalEnabled(enabled: Boolean, context: Context) {
@@ -1277,7 +2091,10 @@ class MainViewModel : ViewModel() {
 
     fun setFlashlightLiveUpdateEnabled(enabled: Boolean, context: Context) {
         isFlashlightLiveUpdateEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_FLASHLIGHT_LIVE_UPDATE_ENABLED, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_FLASHLIGHT_LIVE_UPDATE_ENABLED,
+            enabled
+        )
     }
 
     fun setFlashlightLastIntensity(intensity: Int, context: Context) {
@@ -1286,13 +2103,12 @@ class MainViewModel : ViewModel() {
     }
 
 
-
-
-
-
     fun setScreenLockedSecurityEnabled(enabled: Boolean, context: Context) {
         isScreenLockedSecurityEnabled.value = enabled
-        settingsRepository.putBoolean(SettingsRepository.KEY_SCREEN_LOCKED_SECURITY_ENABLED, enabled)
+        settingsRepository.putBoolean(
+            SettingsRepository.KEY_SCREEN_LOCKED_SECURITY_ENABLED,
+            enabled
+        )
     }
 
     fun setNotificationLightingGlowSides(sides: Set<NotificationLightingSide>, context: Context) {
@@ -1316,7 +2132,6 @@ class MainViewModel : ViewModel() {
     }
 
 
-
     fun exportConfigs(context: Context, outputStream: java.io.OutputStream) {
         settingsRepository.exportConfigs(outputStream)
     }
@@ -1324,15 +2139,109 @@ class MainViewModel : ViewModel() {
     fun importConfigs(context: Context, inputStream: java.io.InputStream): Boolean {
         val success = settingsRepository.importConfigs(inputStream)
         if (success) {
+            settingsRepository.syncSystemSettingsWithSaved()
+            com.brittytino.patchwork.domain.diy.DIYRepository.reloadAutomations()
+            refreshFreezePickedApps(context, silent = true)
             check(context)
         }
         return success
     }
 
+    fun exportFreezeApps(outputStream: java.io.OutputStream) {
+        try {
+            val apps = settingsRepository.loadFreezeSelectedApps()
+            val gson = com.google.gson.Gson()
+            val json = gson.toJson(apps)
+            outputStream.write(json.toByteArray())
+            outputStream.flush()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            try {
+                outputStream.close()
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    fun importFreezeApps(context: Context, inputStream: java.io.InputStream): Boolean {
+        return try {
+            val json = inputStream.bufferedReader().use { it.readText() }
+            val gson = com.google.gson.Gson()
+            val apps = gson.fromJson(json, Array<AppSelection>::class.java).toList()
+
+            // Filter out non-installed apps
+            val pm = context.packageManager
+            val installedApps = apps.filter { app ->
+                try {
+                    pm.getPackageInfo(app.packageName, 0)
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+            }
+
+            settingsRepository.saveFreezeSelectedApps(installedApps)
+            refreshFreezePickedApps(context, silent = true)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        } finally {
+            try {
+                inputStream.close()
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    fun setAutoAccessibilityEnabled(isEnabled: Boolean, context: Context) {
+        settingsRepository.putBoolean(SettingsRepository.KEY_AUTO_ACCESSIBILITY_ENABLED, isEnabled)
+        isAutoAccessibilityEnabled.value = isEnabled
+    }
 
     fun generateBugReport(context: Context): String {
         val settingsJson = settingsRepository.getAllConfigsAsJsonString()
         return com.brittytino.patchwork.utils.LogManager.generateReport(context, settingsJson)
     }
 
+    fun setAodEnabled(enabled: Boolean) {
+        isAodEnabled.value = enabled
+        settingsRepository.setAodEnabled(enabled)
+    }
+
+    fun toggleNotificationGlanceEnabled(enabled: Boolean) {
+        settingsRepository.putBoolean(SettingsRepository.KEY_NOTIFICATION_GLANCE_ENABLED, enabled)
+        isNotificationGlanceEnabled.value = enabled
+    }
+
+    fun toggleAodForceTurnOffEnabled(enabled: Boolean) {
+        settingsRepository.putBoolean(SettingsRepository.KEY_AOD_FORCE_TURN_OFF_ENABLED, enabled)
+        isAodForceTurnOffEnabled.value = enabled
+    }
+    fun setNotificationGlanceSameAsLightingEnabled(enabled: Boolean) {
+        isNotificationGlanceSameAsLightingEnabled.value = enabled
+        settingsRepository.putBoolean(SettingsRepository.KEY_NOTIFICATION_GLANCE_SAME_AS_LIGHTING, enabled)
+    }
+
+    fun loadNotificationGlanceSelectedApps(context: Context): List<AppSelection> {
+        return settingsRepository.loadNotificationGlanceSelectedApps()
+    }
+
+    fun saveNotificationGlanceSelectedApps(context: Context, apps: List<AppSelection>) {
+        settingsRepository.saveNotificationGlanceSelectedApps(apps)
+    }
+
+    fun updateNotificationGlanceAppEnabled(context: Context, packageName: String, enabled: Boolean) {
+        settingsRepository.updateNotificationGlanceAppSelection(packageName, enabled)
+    }
+
+    override fun onCleared() {
+
+        super.onCleared()
+        appContext?.contentResolver?.unregisterContentObserver(contentObserver)
+        if (::settingsRepository.isInitialized) {
+            settingsRepository.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+        }
+    }
 }

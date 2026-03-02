@@ -1,7 +1,5 @@
 package com.brittytino.patchwork.utils
 
-import com.brittytino.patchwork.R
-
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -17,7 +15,8 @@ object BiometricHelper {
         onError: (String) -> Unit = {}
     ) {
         val executor = ContextCompat.getMainExecutor(activity)
-        val biometricPrompt = BiometricPrompt(activity, executor,
+        val biometricPrompt = BiometricPrompt(
+            activity, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
@@ -31,7 +30,7 @@ object BiometricHelper {
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    onError(activity.getString(R.string.error_auth_failed))
+                    onError(activity.getString(com.brittytino.patchwork.R.string.error_auth_failed))
                 }
             })
 
@@ -39,6 +38,7 @@ object BiometricHelper {
             .setTitle(title)
             .setSubtitle(subtitle)
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            .setConfirmationRequired(false)
             .build()
 
         biometricPrompt.authenticate(promptInfo)

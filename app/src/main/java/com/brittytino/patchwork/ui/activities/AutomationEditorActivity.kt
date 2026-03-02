@@ -17,15 +17,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
-import com.brittytino.patchwork.ui.components.ReusableTopAppBar
-import com.brittytino.patchwork.ui.theme.PatchworkTheme
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,53 +28,58 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.domain.diy.Action
 import com.brittytino.patchwork.domain.diy.Automation
 import com.brittytino.patchwork.domain.diy.DIYRepository
 import com.brittytino.patchwork.domain.diy.Trigger
-import com.brittytino.patchwork.domain.diy.State as DIYState
+import com.brittytino.patchwork.domain.model.AppSelection
+import com.brittytino.patchwork.domain.model.NotificationApp
+import com.brittytino.patchwork.ui.components.ReusableTopAppBar
+import com.brittytino.patchwork.ui.components.cards.AppToggleItem
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.ui.components.menus.SegmentedDropdownMenu
 import com.brittytino.patchwork.ui.components.menus.SegmentedDropdownMenuItem
 import com.brittytino.patchwork.ui.components.pickers.SegmentedPicker
 import com.brittytino.patchwork.ui.components.sheets.DimWallpaperSettingsSheet
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
-import com.brittytino.patchwork.utils.HapticUtil
-import com.brittytino.patchwork.domain.model.AppSelection
-import com.brittytino.patchwork.domain.model.NotificationApp
+import com.brittytino.patchwork.ui.components.sheets.SoundModeSettingsSheet
+import com.brittytino.patchwork.ui.theme.EssentialsTheme
 import com.brittytino.patchwork.utils.AppUtil
+import com.brittytino.patchwork.utils.HapticUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.Switch
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import com.brittytino.patchwork.ui.components.cards.AppToggleItem
+import com.brittytino.patchwork.domain.diy.State as DIYState
 
 class AutomationEditorActivity : ComponentActivity() {
 
@@ -111,12 +110,13 @@ class AutomationEditorActivity : ComponentActivity() {
 
         val automationId = intent.getStringExtra(EXTRA_AUTOMATION_ID)
         val automationTypeStr = intent.getStringExtra(EXTRA_AUTOMATION_TYPE)
-        
-        val existingAutomation = if (automationId != null) DIYRepository.getAutomation(automationId) else null
+
+        val existingAutomation =
+            if (automationId != null) DIYRepository.getAutomation(automationId) else null
         val isEditMode = existingAutomation != null
 
         val automationType = if (isEditMode) {
-             existingAutomation.type
+            existingAutomation.type
         } else {
             try {
                 Automation.Type.valueOf(automationTypeStr ?: Automation.Type.TRIGGER.name)
@@ -124,21 +124,22 @@ class AutomationEditorActivity : ComponentActivity() {
                 Automation.Type.TRIGGER
             }
         }
-        
-        val titleRes = when(automationType) {
+
+        val titleRes = when (automationType) {
             Automation.Type.TRIGGER -> if (isEditMode) R.string.diy_editor_edit_title else R.string.diy_editor_new_title
             Automation.Type.STATE -> if (isEditMode) R.string.diy_editor_edit_title else R.string.diy_editor_new_title
-            Automation.Type.APP -> if (isEditMode) R.string.diy_editor_edit_title else R.string.diy_create_app_title 
+            Automation.Type.APP -> if (isEditMode) R.string.diy_editor_edit_title else R.string.diy_create_app_title
         }
 
         setContent {
-            val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel =
+                androidx.lifecycle.viewmodel.compose.viewModel()
             val context = androidx.compose.ui.platform.LocalContext.current
             androidx.compose.runtime.LaunchedEffect(Unit) {
                 viewModel.check(context)
             }
             val isPitchBlackThemeEnabled by viewModel.isPitchBlackThemeEnabled
-            PatchworkTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
+            EssentialsTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
                 val view = LocalView.current
                 var carouselState = rememberCarouselState { 2 } // 0: Trigger/State, 1: Actions
 
@@ -146,7 +147,7 @@ class AutomationEditorActivity : ComponentActivity() {
                 LaunchedEffect(carouselState) {
                     var isFirst = true
                     snapshotFlow { carouselState.currentItem }
-                        .collect { 
+                        .collect {
                             if (isFirst) {
                                 isFirst = false
                             } else {
@@ -159,7 +160,11 @@ class AutomationEditorActivity : ComponentActivity() {
                 // Initialize with existing data or defaults
                 var selectedTrigger by remember { mutableStateOf<Trigger?>(existingAutomation?.trigger) }
                 var selectedState by remember { mutableStateOf<DIYState?>(existingAutomation?.state) }
-                var selectedApps by remember { mutableStateOf<List<String>>(existingAutomation?.selectedApps ?: emptyList()) }
+                var selectedApps by remember {
+                    mutableStateOf<List<String>>(
+                        existingAutomation?.selectedApps ?: emptyList()
+                    )
+                }
 
                 // App Picker State
                 var searchQuery by remember { mutableStateOf("") }
@@ -175,7 +180,9 @@ class AutomationEditorActivity : ComponentActivity() {
                             try {
                                 val installed = AppUtil.getInstalledApps(context)
                                 // Merge with selection if existing
-                                val merged = AppUtil.mergeWithSavedApps(installed, selectedApps.map { AppSelection(it, true) })
+                                val merged = AppUtil.mergeWithSavedApps(
+                                    installed,
+                                    selectedApps.map { AppSelection(it, true) })
                                 withContext(Dispatchers.Main) {
                                     allApps = merged
                                     isLoadingApps = false
@@ -187,32 +194,38 @@ class AutomationEditorActivity : ComponentActivity() {
                         }
                     }
                 }
-                
+
                 val filteredApps = remember(allApps, searchQuery, showSystemApps, selectedApps) {
                     allApps.filter {
-                        val matchesSearch = searchQuery.isEmpty() || it.appName.contains(searchQuery, ignoreCase = true)
-                        val isVisible = !it.isSystemApp || showSystemApps || selectedApps.contains(it.packageName)
+                        val matchesSearch = searchQuery.isEmpty() || it.appName.contains(
+                            searchQuery,
+                            ignoreCase = true
+                        )
+                        val isVisible =
+                            !it.isSystemApp || showSystemApps || selectedApps.contains(it.packageName)
                         matchesSearch && isVisible
-                    }.sortedWith(compareByDescending<NotificationApp> { selectedApps.contains(it.packageName) }.thenBy { it.appName.lowercase() })
+                    }
+                        .sortedWith(compareByDescending<NotificationApp> { selectedApps.contains(it.packageName) }.thenBy { it.appName.lowercase() })
                 }
-                
+
                 // Actions
                 // For Trigger type
                 var selectedAction by remember { mutableStateOf<Action?>(existingAutomation?.actions?.firstOrNull()) }
-                
+
                 // For State type
                 var selectedInAction by remember { mutableStateOf<Action?>(existingAutomation?.entryAction) }
                 var selectedOutAction by remember { mutableStateOf<Action?>(existingAutomation?.exitAction) }
-                
+
                 // Tab for State Actions
                 var selectedActionTab by remember { mutableIntStateOf(0) } // 0: In, 1: Out
 
                 // Menu State
                 var showMenu by remember { mutableStateOf(false) }
-                
+
                 // Config Sheets
                 var showDimSettings by remember { mutableStateOf(false) }
                 var showDeviceEffectsSettings by remember { mutableStateOf(false) }
+                var showSoundModeSettings by remember { mutableStateOf(false) }
                 var configAction by remember { mutableStateOf<Action?>(null) } // Generic config action
 
                 // Validation
@@ -249,7 +262,9 @@ class AutomationEditorActivity : ComponentActivity() {
                                             onClick = {
                                                 showMenu = false
                                                 if (existingAutomation != null) {
-                                                    DIYRepository.removeAutomation(existingAutomation.id)
+                                                    DIYRepository.removeAutomation(
+                                                        existingAutomation.id
+                                                    )
                                                 }
                                                 finish()
                                             },
@@ -268,21 +283,24 @@ class AutomationEditorActivity : ComponentActivity() {
                 ) { innerPadding ->
                     val configuration = LocalConfiguration.current
                     val screenWidth = configuration.screenWidthDp.dp
-                    
+
 
                     // Haptic Connection for Swipe Texture
                     val nestedScrollConnection = remember {
                         object : NestedScrollConnection {
                             var accumulatedScroll = 0f
-                            val threshold = 40f 
+                            val threshold = 40f
 
-                            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                            override fun onPreScroll(
+                                available: Offset,
+                                source: NestedScrollSource
+                            ): Offset {
                                 // Only handle drag (user interaction)
                                 if (source == NestedScrollSource.UserInput) {
                                     accumulatedScroll += available.x
 
                                     if (kotlin.math.abs(accumulatedScroll) >= threshold) {
-                                             HapticUtil.performSliderHaptic(view) // Subtle tick
+                                        HapticUtil.performSliderHaptic(view) // Subtle tick
                                         accumulatedScroll = 0f
                                     }
                                 }
@@ -291,9 +309,10 @@ class AutomationEditorActivity : ComponentActivity() {
                         }
                     }
 
-                    Column(modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
                     ) {
                         HorizontalMultiBrowseCarousel(
                             state = carouselState,
@@ -349,9 +368,9 @@ class AutomationEditorActivity : ComponentActivity() {
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .clip(RoundedCornerShape(16.dp))
-                                                    .clickable { 
+                                                    .clickable {
                                                         HapticUtil.performVirtualKeyHaptic(view)
-                                                        showSystemApps = !showSystemApps 
+                                                        showSystemApps = !showSystemApps
                                                     }
                                                     .padding(8.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -371,15 +390,18 @@ class AutomationEditorActivity : ComponentActivity() {
                                                 )
                                                 Switch(
                                                     checked = showSystemApps,
-                                                    onCheckedChange = { 
+                                                    onCheckedChange = {
                                                         HapticUtil.performVirtualKeyHaptic(view)
-                                                        showSystemApps = it 
+                                                        showSystemApps = it
                                                     }
                                                 )
                                             }
 
                                             if (isLoadingApps) {
-                                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
                                                     LoadingIndicator()
                                                 }
                                             } else {
@@ -389,15 +411,21 @@ class AutomationEditorActivity : ComponentActivity() {
                                                         .clip(RoundedCornerShape(24.dp)),
                                                     verticalArrangement = Arrangement.spacedBy(2.dp)
                                                 ) {
-                                                    items(filteredApps, key = { it.packageName }) { app ->
-                                                        val isSelected = selectedApps.contains(app.packageName)
+                                                    items(
+                                                        filteredApps,
+                                                        key = { it.packageName }) { app ->
+                                                        val isSelected =
+                                                            selectedApps.contains(app.packageName)
                                                         AppToggleItem(
                                                             icon = app.icon,
                                                             title = app.appName,
                                                             isChecked = isSelected,
                                                             onCheckedChange = { isChecked ->
-                                                                val current = selectedApps.toMutableList()
-                                                                if (isChecked) current.add(app.packageName) else current.remove(app.packageName)
+                                                                val current =
+                                                                    selectedApps.toMutableList()
+                                                                if (isChecked) current.add(app.packageName) else current.remove(
+                                                                    app.packageName
+                                                                )
                                                                 selectedApps = current
                                                             }
                                                         )
@@ -420,7 +448,7 @@ class AutomationEditorActivity : ComponentActivity() {
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier.padding(horizontal = 12.dp)
                                             )
-                                            
+
                                             RoundedCardContainer(spacing = 2.dp) {
                                                 if (automationType == Automation.Type.TRIGGER) {
                                                     val triggers = listOf(
@@ -448,12 +476,12 @@ class AutomationEditorActivity : ComponentActivity() {
                                                         DIYState.ScreenOn
                                                     )
                                                     states.forEach { state ->
-                                                         EditorActionItem(
+                                                        EditorActionItem(
                                                             title = stringResource(state.title),
                                                             iconRes = state.icon,
                                                             isSelected = selectedState == state,
                                                             onClick = { selectedState = state }
-                                                         )
+                                                        )
                                                     }
                                                 }
                                             }
@@ -485,29 +513,30 @@ class AutomationEditorActivity : ComponentActivity() {
                                             SegmentedPicker(
                                                 items = options,
                                                 selectedItem = options[selectedActionTab],
-                                                onItemSelected = { 
+                                                onItemSelected = {
                                                     HapticUtil.performUIHaptic(view)
-                                                    selectedActionTab = options.indexOf(it) 
+                                                    selectedActionTab = options.indexOf(it)
                                                 },
                                                 labelProvider = { it },
                                                 modifier = Modifier.fillMaxWidth(),
                                                 cornerShape = MaterialTheme.shapes.extraExtraLarge.bottomEnd
                                             )
                                         }
-                                        
+
                                         RoundedCardContainer(spacing = 2.dp) {
                                             val actions = mutableListOf(
                                                 Action.TurnOnFlashlight,
                                                 Action.TurnOffFlashlight,
                                                 Action.ToggleFlashlight,
                                                 Action.HapticVibration,
-                                                Action.DimWallpaper()
+                                                Action.DimWallpaper(),
+                                                Action.SoundMode()
                                             )
                                             // Only show Device Effects on Android 15+ 
                                             actions.add(Action.DeviceEffects())
 
-                                            
-                                            val currentSelection = when(automationType) {
+
+                                            val currentSelection = when (automationType) {
                                                 Automation.Type.TRIGGER -> selectedAction
                                                 Automation.Type.STATE -> if (selectedActionTab == 0) selectedInAction else selectedOutAction
                                                 Automation.Type.APP -> if (selectedActionTab == 0) selectedInAction else selectedOutAction
@@ -519,10 +548,13 @@ class AutomationEditorActivity : ComponentActivity() {
                                                 iconRes = R.drawable.rounded_do_not_disturb_on_24,
                                                 isSelected = currentSelection == null,
                                                 onClick = {
-                                                    when(automationType) {
-                                                        Automation.Type.TRIGGER -> selectedAction = null
+                                                    when (automationType) {
+                                                        Automation.Type.TRIGGER -> selectedAction =
+                                                            null
+
                                                         Automation.Type.STATE, Automation.Type.APP -> {
-                                                            if (selectedActionTab == 0) selectedInAction = null
+                                                            if (selectedActionTab == 0) selectedInAction =
+                                                                null
                                                             else selectedOutAction = null
                                                         }
                                                     }
@@ -531,27 +563,36 @@ class AutomationEditorActivity : ComponentActivity() {
 
                                             actions.forEach { action ->
                                                 // Check if the current selection matches this action type and update 'action' with the selected values if so
-                                                val resolvedAction = if (currentSelection != null && currentSelection::class == action::class) currentSelection else action
-                                                
-                                                 EditorActionItem(
+                                                val resolvedAction =
+                                                    if (currentSelection != null && currentSelection::class == action::class) currentSelection else action
+
+                                                EditorActionItem(
                                                     title = stringResource(resolvedAction.title),
                                                     iconRes = resolvedAction.icon,
                                                     isSelected = currentSelection != null && currentSelection::class == resolvedAction::class,
                                                     isConfigurable = resolvedAction.isConfigurable,
-                                                    onClick = { 
-                                                        when(automationType) {
-                                                            Automation.Type.TRIGGER -> selectedAction = resolvedAction
+                                                    onClick = {
+                                                        when (automationType) {
+                                                            Automation.Type.TRIGGER -> selectedAction =
+                                                                resolvedAction
+
                                                             Automation.Type.STATE, Automation.Type.APP -> {
-                                                                if (selectedActionTab == 0) selectedInAction = resolvedAction
-                                                                else selectedOutAction = resolvedAction
+                                                                if (selectedActionTab == 0) selectedInAction =
+                                                                    resolvedAction
+                                                                else selectedOutAction =
+                                                                    resolvedAction
                                                             }
                                                         }
                                                         // Check permissions immediately on selection
                                                         // For Device Effects, we need Notification Policy Access
                                                         if (resolvedAction is Action.DeviceEffects) {
-                                                            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                                                            val nm =
+                                                                context.getSystemService(
+                                                                    NOTIFICATION_SERVICE
+                                                                ) as android.app.NotificationManager
                                                             if (!nm.isNotificationPolicyAccessGranted) {
-                                                                val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                                                val intent =
+                                                                    Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
                                                                 context.startActivity(intent)
                                                             }
                                                         }
@@ -562,16 +603,18 @@ class AutomationEditorActivity : ComponentActivity() {
                                                             showDimSettings = true
                                                         } else if (resolvedAction is Action.DeviceEffects) {
                                                             showDeviceEffectsSettings = true
+                                                        } else if (resolvedAction is Action.SoundMode) {
+                                                            showSoundModeSettings = true
                                                         }
                                                     }
-                                                 )
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                        
+
                         if (showDimSettings && configAction is Action.DimWallpaper) {
                             DimWallpaperSettingsSheet(
                                 initialAction = configAction as Action.DimWallpaper,
@@ -579,7 +622,7 @@ class AutomationEditorActivity : ComponentActivity() {
                                 onSave = { newAction ->
                                     showDimSettings = false
                                     // Update the selection with configured action
-                                     when(automationType) {
+                                    when (automationType) {
                                         Automation.Type.TRIGGER -> selectedAction = newAction
                                         Automation.Type.STATE, Automation.Type.APP -> {
                                             if (selectedActionTab == 0) selectedInAction = newAction
@@ -597,7 +640,25 @@ class AutomationEditorActivity : ComponentActivity() {
                                 onDismiss = { showDeviceEffectsSettings = false },
                                 onSave = { newAction ->
                                     showDeviceEffectsSettings = false
-                                     when(automationType) {
+                                    when (automationType) {
+                                        Automation.Type.TRIGGER -> selectedAction = newAction
+                                        Automation.Type.STATE, Automation.Type.APP -> {
+                                            if (selectedActionTab == 0) selectedInAction = newAction
+                                            else selectedOutAction = newAction
+                                        }
+                                    }
+                                    configAction = null
+                                }
+                            )
+                        }
+
+                        if (showSoundModeSettings && configAction is Action.SoundMode) {
+                            SoundModeSettingsSheet(
+                                initialAction = configAction as Action.SoundMode,
+                                onDismiss = { showSoundModeSettings = false },
+                                onSave = { newAction ->
+                                    showSoundModeSettings = false
+                                    when (automationType) {
                                         Automation.Type.TRIGGER -> selectedAction = newAction
                                         Automation.Type.STATE, Automation.Type.APP -> {
                                             if (selectedActionTab == 0) selectedInAction = newAction
@@ -642,30 +703,39 @@ class AutomationEditorActivity : ComponentActivity() {
                                     // Save logic
                                     if (automationType == Automation.Type.TRIGGER) {
                                         val newAutomation = Automation(
-                                            id = if (isEditMode) existingAutomation.id else java.util.UUID.randomUUID().toString(),
+                                            id = if (isEditMode) existingAutomation.id else java.util.UUID.randomUUID()
+                                                .toString(),
                                             type = Automation.Type.TRIGGER,
                                             trigger = selectedTrigger,
                                             actions = listOfNotNull(selectedAction)
                                         )
-                                        if (isEditMode) DIYRepository.updateAutomation(newAutomation) else DIYRepository.addAutomation(newAutomation)
+                                        if (isEditMode) DIYRepository.updateAutomation(newAutomation) else DIYRepository.addAutomation(
+                                            newAutomation
+                                        )
                                     } else if (automationType == Automation.Type.STATE) {
                                         val newAutomation = Automation(
-                                            id = if (isEditMode) existingAutomation.id else java.util.UUID.randomUUID().toString(),
+                                            id = if (isEditMode) existingAutomation.id else java.util.UUID.randomUUID()
+                                                .toString(),
                                             type = Automation.Type.STATE,
                                             state = selectedState,
                                             entryAction = selectedInAction,
                                             exitAction = selectedOutAction
                                         )
-                                        if (isEditMode) DIYRepository.updateAutomation(newAutomation) else DIYRepository.addAutomation(newAutomation)
+                                        if (isEditMode) DIYRepository.updateAutomation(newAutomation) else DIYRepository.addAutomation(
+                                            newAutomation
+                                        )
                                     } else {
                                         val newAutomation = Automation(
-                                            id = if (isEditMode) existingAutomation.id else java.util.UUID.randomUUID().toString(),
+                                            id = if (isEditMode) existingAutomation.id else java.util.UUID.randomUUID()
+                                                .toString(),
                                             type = Automation.Type.APP,
                                             selectedApps = selectedApps,
                                             entryAction = selectedInAction,
                                             exitAction = selectedOutAction
                                         )
-                                        if (isEditMode) DIYRepository.updateAutomation(newAutomation) else DIYRepository.addAutomation(newAutomation)
+                                        if (isEditMode) DIYRepository.updateAutomation(newAutomation) else DIYRepository.addAutomation(
+                                            newAutomation
+                                        )
                                     }
                                     finish()
                                 },
@@ -702,9 +772,9 @@ fun EditorActionItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { 
+            .clickable {
                 HapticUtil.performUIHaptic(view)
-                onClick() 
+                onClick()
             }
             .background(
                 color = MaterialTheme.colorScheme.surfaceBright,
@@ -732,9 +802,9 @@ fun EditorActionItem(
             modifier = Modifier.weight(1f),
             color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         if (isSelected && isConfigurable) {
-             IconButton(onClick = onSettingsClick) {
+            IconButton(onClick = onSettingsClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.rounded_settings_24),
                     contentDescription = null,

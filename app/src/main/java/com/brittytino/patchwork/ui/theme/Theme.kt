@@ -23,7 +23,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun PatchworkTheme(
+fun EssentialsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pitchBlackTheme: Boolean = false,
     // Dynamic color is available on Android 12+
@@ -33,7 +33,8 @@ fun PatchworkTheme(
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            val dynamicScheme = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val dynamicScheme =
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (darkTheme && pitchBlackTheme) {
                 dynamicScheme.copy(
                     background = androidx.compose.ui.graphics.Color.Black,
@@ -49,17 +50,18 @@ fun PatchworkTheme(
 
         darkTheme -> {
             if (pitchBlackTheme) {
-                 DarkColorScheme.copy(
+                DarkColorScheme.copy(
                     background = androidx.compose.ui.graphics.Color.Black,
                     surface = androidx.compose.ui.graphics.Color.Black,
                     surfaceContainer = androidx.compose.ui.graphics.Color.Black,
                     surfaceContainerLowest = androidx.compose.ui.graphics.Color.Black,
                     surfaceContainerLow = androidx.compose.ui.graphics.Color.Black
-                 )
+                )
             } else {
                 DarkColorScheme
             }
         }
+
         else -> LightColorScheme
     }
 

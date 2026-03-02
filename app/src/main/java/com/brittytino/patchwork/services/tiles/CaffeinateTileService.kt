@@ -1,16 +1,14 @@
 package com.brittytino.patchwork.services.tiles
 
 import android.app.ActivityManager
-import android.content.Intent
 import android.provider.Settings
 import android.service.quicksettings.Tile
-import androidx.core.content.ContextCompat
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.domain.controller.CaffeinateController
 import com.brittytino.patchwork.services.CaffeinateWakeLockService
 
 class CaffeinateTileService : BaseTileService() {
- 
+
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
         override fun run() {
@@ -40,7 +38,7 @@ class CaffeinateTileService : BaseTileService() {
         } else {
             CaffeinateController.toggle(this)
         }
-        
+
         // Start refreshing if needed
         handler.removeCallbacks(refreshRunnable)
         handler.post(refreshRunnable)
@@ -55,7 +53,14 @@ class CaffeinateTileService : BaseTileService() {
                 60 -> "1h"
                 else -> "${CaffeinateController.selectedTimeout.value}m"
             }
-            getString(R.string.caffeinate_starting_in, CaffeinateController.startingTimeLeft.value) + " ($timeoutStr)"
+            if (CaffeinateController.isActive.value) {
+                "$timeoutStr"
+            } else {
+                getString(
+                    R.string.caffeinate_starting_in,
+                    CaffeinateController.startingTimeLeft.value
+                ) + " ($timeoutStr)"
+            }
         } else if (CaffeinateController.isActive.value) {
             getString(R.string.caffeinate_active)
         } else {
@@ -65,7 +70,6 @@ class CaffeinateTileService : BaseTileService() {
     }
 
     override fun hasFeaturePermission(): Boolean {
-        // Wake lock doesn't require permissions
         return true
     }
 

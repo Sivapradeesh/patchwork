@@ -33,16 +33,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.domain.model.NotificationLightingColorMode
 import com.brittytino.patchwork.domain.model.NotificationLightingStyle
 import com.brittytino.patchwork.ui.components.cards.IconToggleItem
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
+import com.brittytino.patchwork.ui.components.pickers.GlowSidesPicker
 import com.brittytino.patchwork.ui.components.pickers.NotificationLightingColorModePicker
 import com.brittytino.patchwork.ui.components.pickers.NotificationLightingStylePicker
-import com.brittytino.patchwork.ui.components.pickers.GlowSidesPicker
 import com.brittytino.patchwork.ui.components.sheets.AppSelectionSheet
 import com.brittytino.patchwork.ui.components.sliders.ConfigSliderItem
 import com.brittytino.patchwork.ui.modifiers.highlight
@@ -67,13 +67,25 @@ fun NotificationLightingSettingsUI(
     // Corner radius state
 
     // Corner radius state
-    var cornerRadiusDp by remember { mutableFloatStateOf(viewModel.loadNotificationLightingCornerRadius(context)) }
-    var strokeThicknessDp by remember { mutableFloatStateOf(viewModel.loadNotificationLightingStrokeThickness(context)) }
-    
+    var cornerRadiusDp by remember {
+        mutableFloatStateOf(
+            viewModel.loadNotificationLightingCornerRadius(
+                context
+            )
+        )
+    }
+    var strokeThicknessDp by remember {
+        mutableFloatStateOf(
+            viewModel.loadNotificationLightingStrokeThickness(
+                context
+            )
+        )
+    }
+
     var indicatorX by remember { mutableFloatStateOf(viewModel.notificationLightingIndicatorX.value) }
     var indicatorY by remember { mutableFloatStateOf(viewModel.notificationLightingIndicatorY.value) }
     var indicatorScale by remember { mutableFloatStateOf(viewModel.notificationLightingIndicatorScale.value) }
-    
+
     val coroutineScope = rememberCoroutineScope()
 
     // Cleanup overlay when composable is destroyed
@@ -86,7 +98,7 @@ fun NotificationLightingSettingsUI(
     Column(modifier = modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
 
 
-        RoundedCardContainer{
+        RoundedCardContainer {
             IconToggleItem(
                 iconRes = R.drawable.rounded_power_settings_new_24,
                 title = stringResource(R.string.notification_lighting_screen_off_title),
@@ -119,43 +131,12 @@ fun NotificationLightingSettingsUI(
 
         // Style Picker
         Text(
-            text = stringResource(R.string.settings_section_flashlight_pulse),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        RoundedCardContainer{
-            IconToggleItem(
-                iconRes = R.drawable.rounded_flashlight_on_24,
-                title = stringResource(R.string.flashlight_pulse_title),
-                isChecked = viewModel.isFlashlightPulseEnabled.value,
-                onCheckedChange = { checked ->
-                    viewModel.setFlashlightPulseEnabled(checked, context)
-                },
-                modifier = Modifier.highlight(highlightSetting == "flashlight_pulse")
-            )
-            if (viewModel.isFlashlightPulseEnabled.value) {
-                IconToggleItem(
-                    iconRes = R.drawable.rounded_mobile_text_24,
-                    title = stringResource(R.string.flashlight_pulse_facedown_title),
-                    isChecked = viewModel.isFlashlightPulseFacedownOnly.value,
-                    onCheckedChange = { checked ->
-                        viewModel.setFlashlightPulseFacedownOnly(checked, context)
-                    },
-                    modifier = Modifier.highlight(highlightSetting == "flashlight_pulse_facedown")
-                )
-            }
-        }
-
-        // Style Picker
-        Text(
             text = stringResource(R.string.settings_section_style),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         NotificationLightingStylePicker(
             selectedStyle = viewModel.notificationLightingStyle.value,
             onStyleSelected = { style ->
@@ -173,7 +154,7 @@ fun NotificationLightingSettingsUI(
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             RoundedCardContainer(modifier = Modifier) {
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_corner_radius_title),
@@ -182,7 +163,11 @@ fun NotificationLightingSettingsUI(
                         cornerRadiusDp = newValue
                         HapticUtil.performSliderHaptic(view)
                         // Show preview overlay while dragging
-                        viewModel.triggerNotificationLightingWithRadiusAndThickness(context, newValue, strokeThicknessDp)
+                        viewModel.triggerNotificationLightingWithRadiusAndThickness(
+                            context,
+                            newValue,
+                            strokeThicknessDp
+                        )
                     },
                     valueRange = 0f..50f,
                     valueFormatter = { "%.1f".format(it) },
@@ -197,7 +182,7 @@ fun NotificationLightingSettingsUI(
                     },
                     modifier = Modifier.highlight(highlightSetting == "corner_radius")
                 )
-                
+
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_stroke_thickness_title),
                     value = strokeThicknessDp,
@@ -205,14 +190,21 @@ fun NotificationLightingSettingsUI(
                         strokeThicknessDp = newValue
                         HapticUtil.performSliderHaptic(view)
                         // Show preview overlay while dragging
-                        viewModel.triggerNotificationLightingWithRadiusAndThickness(context, cornerRadiusDp, newValue)
+                        viewModel.triggerNotificationLightingWithRadiusAndThickness(
+                            context,
+                            cornerRadiusDp,
+                            newValue
+                        )
                     },
                     modifier = Modifier.highlight(highlightSetting == "stroke_thickness"),
                     valueRange = 1f..20f,
                     valueFormatter = { "%.1f".format(it) },
                     onValueChangeFinished = {
                         // Save the stroke thickness
-                        viewModel.saveNotificationLightingStrokeThickness(context, strokeThicknessDp)
+                        viewModel.saveNotificationLightingStrokeThickness(
+                            context,
+                            strokeThicknessDp
+                        )
                         // Wait 5 seconds then remove preview overlay
                         coroutineScope.launch {
                             delay(5000)
@@ -231,7 +223,7 @@ fun NotificationLightingSettingsUI(
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             RoundedCardContainer(modifier = Modifier) {
                 GlowSidesPicker(
                     selectedSides = viewModel.notificationLightingGlowSides.value,
@@ -249,12 +241,19 @@ fun NotificationLightingSettingsUI(
                     onValueChange = { newValue ->
                         strokeThicknessDp = newValue
                         HapticUtil.performSliderHaptic(view)
-                        viewModel.triggerNotificationLightingWithRadiusAndThickness(context, cornerRadiusDp, newValue)
+                        viewModel.triggerNotificationLightingWithRadiusAndThickness(
+                            context,
+                            cornerRadiusDp,
+                            newValue
+                        )
                     },
                     valueRange = 1f..10f,
                     valueFormatter = { "%.1f".format(it) },
                     onValueChangeFinished = {
-                        viewModel.saveNotificationLightingStrokeThickness(context, strokeThicknessDp)
+                        viewModel.saveNotificationLightingStrokeThickness(
+                            context,
+                            strokeThicknessDp
+                        )
                         coroutineScope.launch {
                             delay(2000)
                             viewModel.removePreviewOverlay(context)
@@ -263,7 +262,7 @@ fun NotificationLightingSettingsUI(
                 )
             }
         }
-        
+
         // Indicator Adjustment Section (For INDICATOR style)
         if (style == NotificationLightingStyle.INDICATOR) {
             Text(
@@ -272,7 +271,7 @@ fun NotificationLightingSettingsUI(
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             RoundedCardContainer(modifier = Modifier) {
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_h_pos_title),
@@ -280,7 +279,12 @@ fun NotificationLightingSettingsUI(
                     onValueChange = { newValue ->
                         indicatorX = newValue
                         HapticUtil.performSliderHaptic(view)
-                        viewModel.triggerNotificationLightingForIndicator(context, newValue, indicatorY, indicatorScale)
+                        viewModel.triggerNotificationLightingForIndicator(
+                            context,
+                            newValue,
+                            indicatorY,
+                            indicatorScale
+                        )
                     },
                     valueRange = 0f..100f,
                     valueFormatter = { "%.1f%%".format(it) },
@@ -292,14 +296,19 @@ fun NotificationLightingSettingsUI(
                         }
                     }
                 )
-                
+
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_v_pos_title),
                     value = indicatorY,
                     onValueChange = { newValue ->
                         indicatorY = newValue
                         HapticUtil.performSliderHaptic(view)
-                        viewModel.triggerNotificationLightingForIndicator(context, indicatorX, newValue, indicatorScale)
+                        viewModel.triggerNotificationLightingForIndicator(
+                            context,
+                            indicatorX,
+                            newValue,
+                            indicatorScale
+                        )
                     },
                     valueRange = 0f..100f,
                     valueFormatter = { "%.1f%%".format(it) },
@@ -327,7 +336,12 @@ fun NotificationLightingSettingsUI(
                     onValueChange = { newValue ->
                         indicatorScale = newValue
                         HapticUtil.performSliderHaptic(view)
-                        viewModel.triggerNotificationLightingForIndicator(context, indicatorX, indicatorY, newValue)
+                        viewModel.triggerNotificationLightingForIndicator(
+                            context,
+                            indicatorX,
+                            indicatorY,
+                            newValue
+                        )
                     },
                     valueRange = 0.5f..3f,
                     valueFormatter = { "%.1fx".format(it) },
@@ -343,7 +357,7 @@ fun NotificationLightingSettingsUI(
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_duration_title),
                     value = viewModel.notificationLightingPulseDuration.value,
-                    onValueChange = { 
+                    onValueChange = {
                         viewModel.saveNotificationLightingPulseDuration(context, it)
                         HapticUtil.performSliderHaptic(view)
                     },
@@ -364,13 +378,13 @@ fun NotificationLightingSettingsUI(
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
-            
+
+
             RoundedCardContainer(modifier = Modifier) {
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_pulse_count_title),
                     value = viewModel.notificationLightingPulseCount.value,
-                    onValueChange = { 
+                    onValueChange = {
                         viewModel.saveNotificationLightingPulseCount(context, it)
                         HapticUtil.performSliderHaptic(view)
                     },
@@ -380,11 +394,11 @@ fun NotificationLightingSettingsUI(
                     valueFormatter = { "%.1f".format(it) },
                     onValueChangeFinished = { viewModel.triggerNotificationLighting(context) }
                 )
-                    
+
                 ConfigSliderItem(
                     title = stringResource(R.string.notification_lighting_pulse_duration_title),
                     value = viewModel.notificationLightingPulseDuration.value,
-                    onValueChange = { 
+                    onValueChange = {
                         viewModel.saveNotificationLightingPulseDuration(context, it)
                         HapticUtil.performSliderHaptic(view)
                     },
@@ -443,11 +457,35 @@ fun NotificationLightingSettingsUI(
                                 val hue = (globalCol.toFloat() / totalColumns) * 360f
 
                                 // Row 1: Light
-                                row1.add(android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.4f, 1.0f)))
+                                row1.add(
+                                    android.graphics.Color.HSVToColor(
+                                        floatArrayOf(
+                                            hue,
+                                            0.4f,
+                                            1.0f
+                                        )
+                                    )
+                                )
                                 // Row 2: Regular
-                                row2.add(android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.85f, 1.0f)))
+                                row2.add(
+                                    android.graphics.Color.HSVToColor(
+                                        floatArrayOf(
+                                            hue,
+                                            0.85f,
+                                            1.0f
+                                        )
+                                    )
+                                )
                                 // Row 3: Dark
-                                row3.add(android.graphics.Color.HSVToColor(floatArrayOf(hue, 1.0f, 0.55f)))
+                                row3.add(
+                                    android.graphics.Color.HSVToColor(
+                                        floatArrayOf(
+                                            hue,
+                                            1.0f,
+                                            0.55f
+                                        )
+                                    )
+                                )
                             }
                             colors.addAll(row1)
                             colors.addAll(row2)
@@ -486,7 +524,10 @@ fun NotificationLightingSettingsUI(
                                             size = 36.dp,
                                             onClick = {
                                                 HapticUtil.performVirtualKeyHaptic(view)
-                                                viewModel.setNotificationLightingCustomColor(colorInt, context)
+                                                viewModel.setNotificationLightingCustomColor(
+                                                    colorInt,
+                                                    context
+                                                )
                                             }
                                         )
                                     }
@@ -503,7 +544,8 @@ fun NotificationLightingSettingsUI(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         repeat(pages.size) { iteration ->
-                            val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            val color =
+                                if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                             Box(
                                 modifier = Modifier
                                     .padding(horizontal = 4.dp)
@@ -544,7 +586,7 @@ fun NotificationLightingSettingsUI(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        RoundedCardContainer{
+        RoundedCardContainer {
             IconToggleItem(
                 iconRes = R.drawable.rounded_nightlight_24,
                 title = stringResource(R.string.ambient_display_title),
@@ -575,8 +617,19 @@ fun NotificationLightingSettingsUI(
             AppSelectionSheet(
                 onDismissRequest = { showAppSelectionSheet = false },
                 onLoadApps = { viewModel.loadNotificationLightingSelectedApps(it) },
-                onSaveApps = { ctx, apps -> viewModel.saveNotificationLightingSelectedApps(ctx, apps) },
-                onAppToggle = { ctx, pkg, enabled -> viewModel.updateNotificationLightingAppEnabled(ctx, pkg, enabled) },
+                onSaveApps = { ctx, apps ->
+                    viewModel.saveNotificationLightingSelectedApps(
+                        ctx,
+                        apps
+                    )
+                },
+                onAppToggle = { ctx, pkg, enabled ->
+                    viewModel.updateNotificationLightingAppEnabled(
+                        ctx,
+                        pkg,
+                        enabled
+                    )
+                },
                 context = context
             )
         }

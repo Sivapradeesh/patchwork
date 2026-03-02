@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-feature android:name="android.hardware.camera.flashlight" android:required="false" />
 
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
@@ -27,8 +30,9 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" tools:ignore="UnusedAttribute" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <permission android:name="com.brittytino.permission.PATCHWORK_AIRSYNC_BRIDGE" android:protectionLevel="signature" />
-    <uses-permission android:name="com.brittytino.permission.PATCHWORK_AIRSYNC_BRIDGE" />
+    <permission android:name="com.brittytino.permission.ESSENTIALS_AIRSYNC_BRIDGE" android:protectionLevel="signature" />
+    <uses-permission android:name="com.brittytino.permission.ESSENTIALS_AIRSYNC_BRIDGE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
 
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
@@ -37,7 +41,7 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <application
-        android:name=".PatchworkApp"
+        android:name=".EssentialsApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -46,12 +50,13 @@
         android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Patchwork">
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.Essentials">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Patchwork.Splash">
+            android:theme="@style/Theme.Essentials.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -78,28 +83,43 @@
             android:name=".FeatureSettingsActivity"
             android:exported="false"
             android:label="Feature Settings"
-            android:theme="@style/Theme.Patchwork">
+            android:theme="@style/Theme.Essentials">
         </activity>
 
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="Settings"
-            android:theme="@style/Theme.Patchwork">
+            android:theme="@style/Theme.Essentials">
+        </activity>
+        <activity
+            android:name=".AppUpdatesActivity"
+            android:exported="false"
+            android:label="@string/tab_app_updates_title"
+            android:theme="@style/Theme.Essentials">
+        </activity>
+        <activity
+            android:name=".ui.activities.ColorPickerActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Essentials.Translucent">
         </activity>
 
         <activity
             android:name=".ui.activities.LocationAlarmActivity"
             android:exported="true"
             android:launchMode="singleInstance"
-            android:theme="@style/Theme.Patchwork.FullScreenAlarm" />
+            android:theme="@style/Theme.Essentials.FullScreenAlarm" />
 
 
         <activity
             android:name=".ui.activities.AutomationEditorActivity"
             android:exported="false"
             android:label="@string/diy_editor_new_title"
-            android:theme="@style/Theme.Patchwork" />
+            android:theme="@style/Theme.Essentials" />
 
 
         <service
@@ -112,14 +132,14 @@
             android:name=".ui.activities.AppFreezingActivity"
             android:exported="true"
             android:label="@string/freeze_activity_title"
-            android:theme="@style/Theme.Patchwork">
+            android:theme="@style/Theme.Essentials">
         </activity>
 
         <activity
             android:name=".LinkPickerActivity"
             android:exported="true"
             android:label="Open Link"
-            android:theme="@style/Theme.Patchwork">
+            android:theme="@style/Theme.Essentials">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -161,7 +181,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Patchwork.Translucent" />
+            android:theme="@style/Theme.Essentials.Translucent" />
 
         <activity
             android:name=".ui.activities.TileAuthActivity"
@@ -169,7 +189,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Patchwork.Translucent" />
+            android:theme="@style/Theme.Essentials.Translucent" />
 
         <activity
             android:name=".ui.activities.QSPreferencesActivity"
@@ -190,7 +210,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Patchwork.Translucent">
+            android:theme="@style/Theme.Essentials.Translucent">
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -203,13 +223,21 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Patchwork.Translucent" />
+            android:theme="@style/Theme.Essentials.Translucent" />
 
         <activity
-            android:name=".ui.composables.watermark.WatermarkActivity"
+            android:name=".ui.activities.PrivateDnsSettingsActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Essentials.Translucent" />
+
+        <activity
+            android:name=".ui.activities.WatermarkActivity"
             android:exported="true"
             android:label="@string/feat_watermark_title"
-            android:theme="@style/Theme.Patchwork">
+            android:theme="@style/Theme.Essentials">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -305,6 +333,14 @@
                 android:value="Caffeinate Service" />
         </service>
         <service
+            android:name=".services.BatteryNotificationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.property.FOREGROUND_SERVICE_TYPE_SPECIAL_USE_DESCRIPTION"
+                android:value="Battery Notification Service" />
+        </service>
+        <service
             android:name=".services.tiles.SoundModeTileService"
             android:exported="true"
             android:icon="@drawable/rounded_volume_up_24"
@@ -370,16 +406,6 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name=".services.tiles.AlwaysOnDisplayTileService"
-            android:exported="true"
-            android:icon="@drawable/rounded_mobile_text_2_24"
-            android:label="AOD"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-            <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE" />
-            </intent-filter>
-        </service>
         <service
             android:name=".services.tiles.NotificationLightingTileService"
             android:exported="true"
@@ -448,7 +474,7 @@
 
         <service
             android:name=".services.EssentialsConditionProvider"
-            android:label="Patchwork Focus"
+            android:label="Essentials Focus"
             android:permission="android.permission.BIND_CONDITION_PROVIDER_SERVICE"
             android:exported="true">
             <intent-filter>
@@ -554,6 +580,26 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+        <service
+            android:name=".services.tiles.ColorPickerTileService"
+            android:exported="true"
+            android:icon="@drawable/rounded_colorize_24"
+            android:label="@string/tile_color_picker"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".services.tiles.DeveloperOptionsTileService"
+            android:exported="true"
+            android:icon="@drawable/rounded_mobile_code_24"
+            android:label="@string/tile_developer_options"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".services.receivers.FlashlightActionReceiver"
@@ -564,6 +610,40 @@
                 <action android:name="com.brittytino.patchwork.ACTION_FLASHLIGHT_OFF" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".services.tiles.BatteryNotificationTileService"
+            android:exported="true"
+            android:icon="@drawable/rounded_battery_charging_60_24"
+            android:label="@string/feat_battery_notification_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".services.tiles.ChargeQuickTileService"
+            android:exported="true"
+            android:icon="@drawable/rounded_battery_android_frame_shield_24"
+            android:label="@string/tile_charge_optimization"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".services.tiles.AlwaysOnDisplayTileService"
+            android:exported="true"
+            android:icon="@drawable/rounded_mobile_text_2_24"
+            android:label="@string/feat_always_on_display_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".services.receivers.SecurityDeviceAdminReceiver"
@@ -580,11 +660,52 @@
         <receiver
             android:name=".services.receivers.AirSyncBridgeReceiver"
             android:exported="true"
-            android:permission="com.brittytino.permission.PATCHWORK_AIRSYNC_BRIDGE">
+            android:permission="com.brittytino.permission.ESSENTIALS_AIRSYNC_BRIDGE">
             <intent-filter>
                 <action android:name="com.brittytino.patchwork.action.UPDATE_MAC_BATTERY" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".services.receivers.CallVibrationReceiver"
+            android:exported="true"
+            android:permission="android.permission.READ_PHONE_STATE">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".services.receivers.StatusBarAutomationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".services.dreams.AmbientDreamService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="Ambience"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

@@ -2,6 +2,7 @@ package com.brittytino.patchwork.ui.activities
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,13 +10,32 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -24,15 +44,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.services.receivers.FlashlightActionReceiver
-import com.brittytino.patchwork.ui.theme.PatchworkTheme
+import com.brittytino.patchwork.ui.theme.EssentialsTheme
 import com.brittytino.patchwork.utils.FlashlightUtil
 import com.brittytino.patchwork.utils.HapticUtil
 
 class FlashlightIntensityActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val componentName = intent?.getParcelableExtra<android.content.ComponentName>("android.intent.extra.COMPONENT_NAME")
+
+        val componentName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra(
+                "android.intent.extra.COMPONENT_NAME",
+                android.content.ComponentName::class.java
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableExtra("android.intent.extra.COMPONENT_NAME")
+        }
         if (componentName != null && componentName.className != "com.brittytino.patchwork.services.tiles.FlashlightTileService") {
             // Redirect to MainActivity for other tiles
             val mainIntent = Intent(this, com.brittytino.patchwork.MainActivity::class.java).apply {
@@ -47,13 +75,14 @@ class FlashlightIntensityActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel =
+                androidx.lifecycle.viewmodel.compose.viewModel()
             val context = LocalContext.current
             LaunchedEffect(Unit) {
                 viewModel.check(context)
             }
             val isPitchBlackThemeEnabled by viewModel.isPitchBlackThemeEnabled
-            PatchworkTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
+            EssentialsTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
                 FlashlightIntensityOverlay(onDismiss = { finish() })
             }
         }
@@ -65,21 +94,27 @@ fun FlashlightIntensityOverlay(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val view = LocalView.current
     val prefs = remember { context.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE) }
-    
+
     // Get flashlight max level
-    val maxLevel = remember { 
-        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
+    val maxLevel = remember {
+        val cameraManager =
+            context.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
         val cameraId = try {
             cameraManager.cameraIdList.firstOrNull { id ->
-                cameraManager.getCameraCharacteristics(id).get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                cameraManager.getCameraCharacteristics(id)
+                    .get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
             } ?: "0"
         } catch (e: Exception) {
             "0"
         }
         FlashlightUtil.getMaxLevel(context, cameraId)
     }
-    
-    var intensity by remember { mutableFloatStateOf(prefs.getInt("flashlight_last_intensity", 1).toFloat()) }
+
+    var intensity by remember {
+        mutableFloatStateOf(
+            prefs.getInt("flashlight_last_intensity", 1).toFloat()
+        )
+    }
     var lastSentLevel by remember { mutableIntStateOf(intensity.toInt()) }
 
     LaunchedEffect(Unit) {
@@ -104,7 +139,7 @@ fun FlashlightIntensityOverlay(onDismiss: () -> Unit) {
     ) {
         Card(
             modifier = Modifier
-                .padding(24.dp)
+                .padding(16.dp)
                 .fillMaxWidth()
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -117,7 +152,7 @@ fun FlashlightIntensityOverlay(onDismiss: () -> Unit) {
             )
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -125,43 +160,44 @@ fun FlashlightIntensityOverlay(onDismiss: () -> Unit) {
                     painter = painterResource(id = R.drawable.rounded_flashlight_on_24),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(24.dp)
                 )
-                
+
                 Text(
                     text = stringResource(R.string.feature_flashlight_brightness_title),
                     style = MaterialTheme.typography.titleLarge
                 )
-                
+
                 Slider(
                     value = intensity,
                     onValueChange = { newVal ->
                         intensity = newVal
                         val level = newVal.toInt().coerceIn(1, maxLevel)
-                        
+
                         if (level != lastSentLevel) {
                             lastSentLevel = level
                             // Send broadcast to update intensity
-                            val intent = Intent(context, FlashlightActionReceiver::class.java).apply {
-                                action = FlashlightActionReceiver.ACTION_SET_INTENSITY
-                                putExtra(FlashlightActionReceiver.EXTRA_INTENSITY, level)
-                            }
+                            val intent =
+                                Intent(context, FlashlightActionReceiver::class.java).apply {
+                                    action = FlashlightActionReceiver.ACTION_SET_INTENSITY
+                                    putExtra(FlashlightActionReceiver.EXTRA_INTENSITY, level)
+                                }
                             context.sendBroadcast(intent)
-                            
+
                             // Persist
                             prefs.edit().putInt("flashlight_last_intensity", level).apply()
-                            
+
                             HapticUtil.performSliderHaptic(view)
                         }
                     },
                     valueRange = 1f..maxLevel.toFloat()
                 )
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    
+
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
@@ -172,9 +208,10 @@ fun FlashlightIntensityOverlay(onDismiss: () -> Unit) {
 
                     Button(
                         onClick = {
-                            val intent = Intent(context, FlashlightActionReceiver::class.java).apply {
-                                action = FlashlightActionReceiver.ACTION_OFF
-                            }
+                            val intent =
+                                Intent(context, FlashlightActionReceiver::class.java).apply {
+                                    action = FlashlightActionReceiver.ACTION_OFF
+                                }
                             context.sendBroadcast(intent)
                             onDismiss()
                         },

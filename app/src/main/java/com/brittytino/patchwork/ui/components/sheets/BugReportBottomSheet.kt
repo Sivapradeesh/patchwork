@@ -113,8 +113,8 @@ fun BugReportBottomSheet(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -129,7 +129,7 @@ fun BugReportBottomSheet(
                 Column(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.surfaceBright)
-                        .padding(24.dp)
+                        .padding(16.dp)
                         .fillMaxWidth()
                 ) {
                     Text(
@@ -160,7 +160,7 @@ fun BugReportBottomSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { isRawReportExpanded = !isRawReportExpanded }
-                                .padding(vertical = 16.dp, horizontal = 24.dp),
+                                .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -181,7 +181,13 @@ fun BugReportBottomSheet(
                             enter = expandVertically() + fadeIn(),
                             exit = shrinkVertically() + fadeOut()
                         ) {
-                            Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                            Column(
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 16.dp
+                                )
+                            ) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 SelectionContainer {
                                     Text(
@@ -219,12 +225,19 @@ fun BugReportBottomSheet(
                 Button(
                     onClick = {
                         val encodedBody = Uri.encode(contentToShare)
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/brittytino/patchwork/issues/new?body=$encodedBody"))
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/sameerasw/essentials/issues/new?body=$encodedBody")
+                        )
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(painter = painterResource(R.drawable.rounded_globe_24), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.brand_github),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.action_report_github))
                 }
@@ -235,18 +248,29 @@ fun BugReportBottomSheet(
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
                             data = Uri.parse("mailto:")
                             putExtra(Intent.EXTRA_EMAIL, arrayOf("mail@brittytino08@gmail.com"))
-                            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.bug_report_email_subject))
+                            putExtra(
+                                Intent.EXTRA_SUBJECT,
+                                context.getString(R.string.bug_report_email_subject)
+                            )
                             putExtra(Intent.EXTRA_TEXT, contentToShare)
                         }
                         try {
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, context.getString(R.string.error_no_email_app), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.error_no_email_app),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(painter = painterResource(R.drawable.rounded_mail_24), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.rounded_mail_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.action_report_email))
                 }
@@ -254,14 +278,23 @@ fun BugReportBottomSheet(
                 // Clipboard
                 Button(
                     onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clipboard =
+                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("Bug Report", contentToShare)
                         clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, context.getString(R.string.toast_bug_report_copied), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.toast_bug_report_copied),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(painter = painterResource(R.drawable.rounded_content_copy_24), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.rounded_content_copy_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.action_copy_clipboard))
                 }

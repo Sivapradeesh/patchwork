@@ -30,9 +30,9 @@ import com.brittytino.patchwork.domain.DIYTabs
 fun DefaultTabPicker(
     selectedTab: DIYTabs,
     onTabSelected: (DIYTabs) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    options: List<DIYTabs> = DIYTabs.entries
 ) {
-    val options = DIYTabs.entries
 
     Row(
         modifier = modifier
@@ -45,7 +45,7 @@ fun DefaultTabPicker(
     ) {
         options.forEachIndexed { index, tab ->
             val isChecked = selectedTab == tab
-            
+
             ToggleButton(
                 checked = isChecked,
                 onCheckedChange = {
@@ -70,7 +70,9 @@ fun DefaultTabPicker(
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
-                        text = if (tab == DIYTabs.FREEZE) stringResource(R.string.tab_freeze_title) else stringResource(tab.title),
+                        text = if (tab == DIYTabs.FREEZE) stringResource(R.string.tab_freeze_title) else stringResource(
+                            tab.title
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 1

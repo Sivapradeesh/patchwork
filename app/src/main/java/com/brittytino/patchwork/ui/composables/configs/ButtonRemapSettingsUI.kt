@@ -10,12 +10,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.magnifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,29 +35,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.brittytino.patchwork.R
+import com.brittytino.patchwork.domain.HapticFeedbackType
+import com.brittytino.patchwork.shizuku.ShizukuPermissionHelper
+import com.brittytino.patchwork.shizuku.ShizukuStatus
 import com.brittytino.patchwork.ui.components.cards.FeatureCard
 import com.brittytino.patchwork.ui.components.cards.IconToggleItem
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.ui.components.pickers.HapticFeedbackPicker
 import com.brittytino.patchwork.ui.components.pickers.SegmentedPicker
 import com.brittytino.patchwork.ui.modifiers.highlight
-import com.brittytino.patchwork.domain.HapticFeedbackType
 import com.brittytino.patchwork.utils.HapticUtil
 import com.brittytino.patchwork.viewmodels.MainViewModel
-import com.brittytino.patchwork.shizuku.ShizukuPermissionHelper
-import com.brittytino.patchwork.services.InputEventListenerService
-import com.brittytino.patchwork.shizuku.ShizukuStatus
-import com.brittytino.patchwork.utils.ShizukuUtils
-import android.content.Intent
-import androidx.compose.foundation.layout.height
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.platform.LocalLifecycleOwner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,20 +60,30 @@ fun ButtonRemapSettingsUI(
     highlightSetting: String? = null
 ) {
     val context = LocalContext.current
+    val showLikeSongOptions = remember { mutableStateOf(false) }
+
+    if (showLikeSongOptions.value) {
+        LikeSongSettingsSheet(
+            onDismiss = { showLikeSongOptions.value = false },
+            viewModel = viewModel,
+            context = context
+        )
+    }
+
     val view = LocalView.current
     var selectedScreenTab by remember { mutableIntStateOf(0) } // 0: Off, 1: On
     var selectedButtonTab by remember { mutableIntStateOf(0) } // 0: Up, 1: Down
     var showFlashlightOptions by remember { mutableStateOf(false) }
-    
+
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var shizukuStatus by remember { mutableStateOf(ShizukuStatus.NOT_RUNNING) }
     val shizukuHelper = remember { ShizukuPermissionHelper(context) }
-    
+
     // Check Shizuku status on resume
-     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                 shizukuStatus = shizukuHelper.getStatus()
+                shizukuStatus = shizukuHelper.getStatus()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -138,12 +140,20 @@ fun ButtonRemapSettingsUI(
                                 } else if (isRootEnabled && !shellHasPermission) {
                                     // Root logic
                                     viewModel.setButtonRemapUseShizuku(true, context)
-                                    com.brittytino.patchwork.utils.ShellUtils.runCommand(context, "id")
+                                    com.brittytino.patchwork.utils.ShellUtils.runCommand(
+                                        context,
+                                        "id"
+                                    )
                                 } else {
                                     // Provider not running
                                     viewModel.setButtonRemapUseShizuku(true, context)
-                                    val toastRes = if (isRootEnabled) R.string.root_not_available_toast else R.string.shizuku_not_running_toast
-                                    android.widget.Toast.makeText(context, context.getString(toastRes), android.widget.Toast.LENGTH_SHORT).show()
+                                    val toastRes =
+                                        if (isRootEnabled) R.string.root_not_available_toast else R.string.shizuku_not_running_toast
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        context.getString(toastRes),
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             } else {
                                 viewModel.setButtonRemapUseShizuku(false, context)
@@ -312,26 +322,26 @@ fun ButtonRemapSettingsUI(
                         labelProvider = { it }
                     )
 
-                    val currentAction = when {
-                        selectedScreenTab == 0 && selectedButtonTab == 0 -> viewModel.volumeUpActionOff.value
-                        selectedScreenTab == 0 && selectedButtonTab == 1 -> viewModel.volumeDownActionOff.value
-                        selectedScreenTab == 1 && selectedButtonTab == 0 -> viewModel.volumeUpActionOn.value
+                    val currentAction = when (selectedScreenTab) {
+                        0 if selectedButtonTab == 0 -> viewModel.volumeUpActionOff.value
+                        0 if selectedButtonTab == 1 -> viewModel.volumeDownActionOff.value
+                        1 if selectedButtonTab == 0 -> viewModel.volumeUpActionOn.value
                         else -> viewModel.volumeDownActionOn.value
                     }
 
                     val onActionSelected: (String) -> Unit = { action ->
-                        when {
-                            selectedScreenTab == 0 && selectedButtonTab == 0 -> viewModel.setVolumeUpActionOff(
+                        when (selectedScreenTab) {
+                            0 if selectedButtonTab == 0 -> viewModel.setVolumeUpActionOff(
                                 action,
                                 context
                             )
 
-                            selectedScreenTab == 0 && selectedButtonTab == 1 -> viewModel.setVolumeDownActionOff(
+                            0 if selectedButtonTab == 1 -> viewModel.setVolumeDownActionOff(
                                 action,
                                 context
                             )
 
-                            selectedScreenTab == 1 && selectedButtonTab == 0 -> viewModel.setVolumeUpActionOn(
+                            1 if selectedButtonTab == 0 -> viewModel.setVolumeUpActionOn(
                                 action,
                                 context
                             )
@@ -402,6 +412,14 @@ fun ButtonRemapSettingsUI(
                         isSelected = currentAction == "Cycle sound modes",
                         onClick = { onActionSelected("Cycle sound modes") },
                         iconRes = R.drawable.rounded_volume_up_24,
+                    )
+                    RemapActionItem(
+                        title = stringResource(R.string.action_like_song),
+                        isSelected = currentAction == "Like current song",
+                        onClick = { onActionSelected("Like current song") },
+                        iconRes = R.drawable.rounded_favorite_24,
+                        hasSettings = true,
+                        onSettingsClick = { showLikeSongOptions.value = true }
                     )
                     if (selectedScreenTab == 1) {
                         RemapActionItem(
@@ -496,7 +514,12 @@ fun ButtonRemapSettingsUI(
                         title = stringResource(R.string.flashlight_always_off_title),
                         description = stringResource(R.string.flashlight_always_off_desc),
                         isChecked = viewModel.isFlashlightAlwaysTurnOffEnabled.value,
-                        onCheckedChange = { viewModel.setFlashlightAlwaysTurnOffEnabled(it, context) }
+                        onCheckedChange = {
+                            viewModel.setFlashlightAlwaysTurnOffEnabled(
+                                it,
+                                context
+                            )
+                        }
                     )
                 }
 
@@ -505,7 +528,9 @@ fun ButtonRemapSettingsUI(
                         HapticUtil.performVirtualKeyHaptic(view)
                         showFlashlightOptions = false
                     },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
                     shape = MaterialTheme.shapes.extraLarge
                 ) {
                     Text(stringResource(R.string.action_done))
@@ -530,9 +555,9 @@ fun RemapActionItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { 
+            .clickable {
                 HapticUtil.performUIHaptic(view)
-                onClick() 
+                onClick()
             }
             .background(
                 color = MaterialTheme.colorScheme.surfaceBright,

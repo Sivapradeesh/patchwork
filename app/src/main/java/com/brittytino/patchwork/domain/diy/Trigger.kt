@@ -1,6 +1,5 @@
 package com.brittytino.patchwork.domain.diy
 
-import androidx.annotation.StringRes
 import com.brittytino.patchwork.R
 
 sealed interface Trigger {

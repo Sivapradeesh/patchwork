@@ -7,10 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import com.brittytino.patchwork.ui.components.linkActions.LinkPickerScreen
-import com.brittytino.patchwork.ui.theme.PatchworkTheme
+import com.brittytino.patchwork.ui.theme.EssentialsTheme
 
 class LinkPickerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +21,7 @@ class LinkPickerActivity : ComponentActivity() {
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
                 extractUrl(text)?.let { Uri.parse(it) }
             }
+
             else -> intent.data
         }
 
@@ -32,14 +33,19 @@ class LinkPickerActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel =
+                androidx.lifecycle.viewmodel.compose.viewModel()
             val context = androidx.compose.ui.platform.LocalContext.current
             androidx.compose.runtime.LaunchedEffect(Unit) {
                 viewModel.check(context)
             }
             val isPitchBlackThemeEnabled by viewModel.isPitchBlackThemeEnabled
-            PatchworkTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
-                LinkPickerScreen(uri = uri, onFinish = { finish() }, modifier = Modifier.fillMaxSize())
+            EssentialsTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
+                LinkPickerScreen(
+                    uri = uri,
+                    onFinish = { finish() },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }

@@ -19,3 +19,26 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Gson rules
+-keep class com.google.gson.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+
+# Shizuku rules
+-keep class rikka.shizuku.** { *; }
+-keep class dev.rikka.shizuku.** { *; }
+
+# Kotlin Reflect
+-keep class kotlin.reflect.** { *; }
+-keep class com.brittytino.patchwork.domain.model.** { *; }
+-keep class com.brittytino.patchwork.domain.diy.** { *; }
+
+# Prevent over-minification of settings and registry classes
+-keep class com.brittytino.patchwork.data.repository.** { *; }
+-keep class com.brittytino.patchwork.domain.registry.** { *; }
+
+# Emoji data classes for Gson
+-keep class com.brittytino.patchwork.ui.ime.EmojiObject { *; }
+-keep class com.brittytino.patchwork.ui.ime.EmojiCategory { *; }
+-keep class com.brittytino.patchwork.ui.ime.EmojiDataResponse { *; }

@@ -17,8 +17,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.brittytino.patchwork.domain.HapticFeedbackType
 import com.brittytino.patchwork.R
+import com.brittytino.patchwork.domain.HapticFeedbackType
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

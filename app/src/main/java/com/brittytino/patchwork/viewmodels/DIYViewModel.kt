@@ -1,10 +1,10 @@
 package com.brittytino.patchwork.viewmodels
 
-import com.brittytino.patchwork.domain.diy.DIYRepository
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.brittytino.patchwork.domain.diy.Automation
+import com.brittytino.patchwork.domain.diy.DIYRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn

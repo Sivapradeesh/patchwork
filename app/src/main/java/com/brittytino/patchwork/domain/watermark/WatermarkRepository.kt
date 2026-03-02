@@ -23,19 +23,26 @@ class WatermarkRepository(
     private val PREF_SHOW_SHUTTER = booleanPreferencesKey("show_shutter")
     private val PREF_SHOW_DATE = booleanPreferencesKey("show_date")
     private val PREF_COLOR_MODE = stringPreferencesKey("color_mode")
-    private val PREF_ACCENT_COLOR = androidx.datastore.preferences.core.intPreferencesKey("accent_color")
+    private val PREF_ACCENT_COLOR =
+        androidx.datastore.preferences.core.intPreferencesKey("accent_color")
     private val PREF_MOVE_TO_TOP = booleanPreferencesKey("move_to_top")
     private val PREF_LEFT_ALIGN = booleanPreferencesKey("left_align")
-    private val PREF_BRAND_TEXT_SIZE = androidx.datastore.preferences.core.intPreferencesKey("brand_text_size")
-    private val PREF_DATA_TEXT_SIZE = androidx.datastore.preferences.core.intPreferencesKey("data_text_size")
+    private val PREF_BRAND_TEXT_SIZE =
+        androidx.datastore.preferences.core.intPreferencesKey("brand_text_size")
+    private val PREF_DATA_TEXT_SIZE =
+        androidx.datastore.preferences.core.intPreferencesKey("data_text_size")
     private val PREF_SHOW_CUSTOM_TEXT = booleanPreferencesKey("show_custom_text")
     private val PREF_CUSTOM_TEXT = stringPreferencesKey("custom_text")
-    private val PREF_CUSTOM_TEXT_SIZE = androidx.datastore.preferences.core.intPreferencesKey("custom_text_size")
+    private val PREF_CUSTOM_TEXT_SIZE =
+        androidx.datastore.preferences.core.intPreferencesKey("custom_text_size")
     private val PREF_PADDING = androidx.datastore.preferences.core.intPreferencesKey("padding")
-    private val PREF_BORDER_STROKE = androidx.datastore.preferences.core.intPreferencesKey("border_stroke")
-    private val PREF_BORDER_CORNER = androidx.datastore.preferences.core.intPreferencesKey("border_corner")
+    private val PREF_BORDER_STROKE =
+        androidx.datastore.preferences.core.intPreferencesKey("border_stroke")
+    private val PREF_BORDER_CORNER =
+        androidx.datastore.preferences.core.intPreferencesKey("border_corner")
     private val PREF_SHOW_LOGO = booleanPreferencesKey("show_logo")
     private val PREF_LOGO_SIZE = androidx.datastore.preferences.core.intPreferencesKey("logo_size")
+    private val PREF_ROTATION = androidx.datastore.preferences.core.intPreferencesKey("rotation")
 
     val watermarkOptions: Flow<WatermarkOptions> = context.dataStore.data
         .map { preferences ->
@@ -72,8 +79,9 @@ class WatermarkRepository(
                 borderStroke = preferences[PREF_BORDER_STROKE] ?: 0,
                 borderCorner = preferences[PREF_BORDER_CORNER] ?: 0,
                 showLogo = preferences[PREF_SHOW_LOGO] ?: false,
-                logoResId = null, 
-                logoSize = preferences[PREF_LOGO_SIZE] ?: 50
+                logoResId = null,
+                logoSize = preferences[PREF_LOGO_SIZE] ?: 50,
+                rotation = preferences[PREF_ROTATION] ?: 0
             )
         }
 
@@ -88,7 +96,7 @@ class WatermarkRepository(
     suspend fun updateShowExif(show: Boolean) {
         context.dataStore.edit { it[PREF_SHOW_EXIF] = show }
     }
-    
+
     suspend fun updateExifSettings(
         focalLength: Boolean,
         aperture: Boolean,
@@ -96,7 +104,7 @@ class WatermarkRepository(
         shutterSpeed: Boolean,
         date: Boolean
     ) {
-        context.dataStore.edit { 
+        context.dataStore.edit {
             it[PREF_SHOW_FOCAL_LENGTH] = focalLength
             it[PREF_SHOW_APERTURE] = aperture
             it[PREF_SHOW_ISO] = iso
@@ -108,11 +116,11 @@ class WatermarkRepository(
     suspend fun updateColorMode(mode: ColorMode) {
         context.dataStore.edit { it[PREF_COLOR_MODE] = mode.name }
     }
-    
+
     suspend fun updateAccentColor(color: Int) {
         context.dataStore.edit { it[PREF_ACCENT_COLOR] = color }
     }
-    
+
     suspend fun updateMoveToTop(move: Boolean) {
         context.dataStore.edit { it[PREF_MOVE_TO_TOP] = move }
     }
@@ -130,7 +138,7 @@ class WatermarkRepository(
     }
 
     suspend fun updateCustomTextSettings(show: Boolean, text: String, size: Int) {
-        context.dataStore.edit { 
+        context.dataStore.edit {
             it[PREF_SHOW_CUSTOM_TEXT] = show
             it[PREF_CUSTOM_TEXT] = text
             it[PREF_CUSTOM_TEXT_SIZE] = size
@@ -154,18 +162,22 @@ class WatermarkRepository(
     }
 
     suspend fun updateLogoSettings(show: Boolean, size: Int) {
-        context.dataStore.edit { 
+        context.dataStore.edit {
             it[PREF_SHOW_LOGO] = show
             it[PREF_LOGO_SIZE] = size
         }
     }
-    
+
     suspend fun updateLogoShow(show: Boolean) {
         context.dataStore.edit { it[PREF_SHOW_LOGO] = show }
     }
-    
+
 
     suspend fun updateLogoSize(size: Int) {
         context.dataStore.edit { it[PREF_LOGO_SIZE] = size }
+    }
+
+    suspend fun updateRotation(rotation: Int) {
+        context.dataStore.edit { it[PREF_ROTATION] = rotation }
     }
 }

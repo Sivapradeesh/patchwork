@@ -16,7 +16,7 @@ class PrivateDnsTileService : BaseTileService() {
     companion object {
         private const val PRIVATE_DNS_MODE = "private_dns_mode"
         private const val PRIVATE_DNS_SPECIFIER = "private_dns_specifier"
-        
+
         private const val MODE_OFF = "off"
         private const val MODE_AUTO = "opportunistic"
         private const val MODE_HOSTNAME = "hostname"
@@ -48,8 +48,12 @@ class PrivateDnsTileService : BaseTileService() {
         return PermissionUtils.canWriteSecureSettings(this)
     }
 
-    override fun getTileIcon(): Icon? {
-        return Icon.createWithResource(this, R.drawable.rounded_dns_24)
+    override fun getTileIcon(): Icon {
+        return when (getPrivateDnsMode()) {
+            MODE_AUTO -> Icon.createWithResource(this, R.drawable.router_24px)
+            MODE_OFF -> Icon.createWithResource(this, R.drawable.router_off_24px)
+            else -> Icon.createWithResource(this, R.drawable.router_24px_filled)
+        }
     }
 
     override fun getTileState(): Int {
@@ -63,10 +67,11 @@ class PrivateDnsTileService : BaseTileService() {
             MODE_AUTO -> {
                 if (getPrivateDnsHostname().isNullOrEmpty()) MODE_OFF else MODE_HOSTNAME
             }
+
             MODE_HOSTNAME -> MODE_OFF
             else -> MODE_OFF
         }
-        
+
         try {
             Settings.Global.putString(contentResolver, PRIVATE_DNS_MODE, nextMode)
         } catch (e: Exception) {

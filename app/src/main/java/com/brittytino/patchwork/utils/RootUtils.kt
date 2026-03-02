@@ -8,18 +8,8 @@ object RootUtils {
     fun isRootAvailable(): Boolean {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "which su"))
-            // Add a short timeout to prevent hanging the app on problematic devices
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                if (!process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) {
-                    process.destroyForcibly()
-                    return false
-                }
-            } else {
-                // Fallback for older versions (unlikely to be used here but for safety)
-                val exitCode = process.waitFor()
-                return exitCode == 0
-            }
-            process.exitValue() == 0
+            val exitCode = process.waitFor()
+            exitCode == 0
         } catch (e: Exception) {
             false
         }
@@ -29,16 +19,8 @@ object RootUtils {
         // In many root managers, 'su -c id' will return 0 if granted
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "id"))
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                if (!process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) {
-                    process.destroyForcibly()
-                    return false
-                }
-            } else {
-                val exitCode = process.waitFor()
-                return exitCode == 0
-            }
-            process.exitValue() == 0
+            val exitCode = process.waitFor()
+            exitCode == 0
         } catch (e: Exception) {
             false
         }
@@ -59,8 +41,14 @@ object RootUtils {
         } catch (e: InterruptedException) {
             false
         } finally {
-            try { os?.close() } catch (e: Exception) {}
-            try { process?.destroy() } catch (e: Exception) {}
+            try {
+                os?.close()
+            } catch (e: Exception) {
+            }
+            try {
+                process?.destroy()
+            } catch (e: Exception) {
+            }
         }
     }
 

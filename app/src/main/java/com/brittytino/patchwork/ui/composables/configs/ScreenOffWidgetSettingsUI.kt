@@ -11,16 +11,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.brittytino.patchwork.R
-import com.brittytino.patchwork.viewmodels.MainViewModel
-import com.brittytino.patchwork.ui.components.pickers.HapticFeedbackPicker
-import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
-import com.brittytino.patchwork.ui.modifiers.highlight
 import com.brittytino.patchwork.domain.HapticFeedbackType
+import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
+import com.brittytino.patchwork.ui.components.pickers.HapticFeedbackPicker
+import com.brittytino.patchwork.ui.modifiers.highlight
 import com.brittytino.patchwork.utils.performHapticFeedback
+import com.brittytino.patchwork.viewmodels.MainViewModel
 
 @Composable
 fun ScreenOffWidgetSettingsUI(

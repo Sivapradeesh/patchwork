@@ -1,19 +1,38 @@
 package com.brittytino.patchwork.ui.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -88,9 +107,33 @@ fun FavoriteCarousel(
             val resolvedTitle = stringResource(id = feature.title)
             var showMenu by remember { mutableStateOf(false) }
 
+            val menuState = com.brittytino.patchwork.ui.state.LocalMenuStateManager.current
+            LaunchedEffect(showMenu) {
+                if (showMenu) {
+                    menuState.activeId = feature.id
+                } else {
+                    if (menuState.activeId == feature.id) {
+                        menuState.activeId = null
+                    }
+                }
+            }
+
+            val isBlurred = menuState.activeId != null && menuState.activeId != feature.id
+            val blurRadius by animateDpAsState(
+                targetValue = if (isBlurred) 10.dp else 0.dp,
+                animationSpec = tween(durationMillis = 500),
+                label = "blur"
+            )
+            val alpha by animateFloatAsState(
+                targetValue = if (isBlurred) 0.5f else 1f,
+                animationSpec = tween(durationMillis = 500),
+                label = "alpha"
+            )
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .alpha(alpha)
                     .maskClip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.surfaceBright)
                     .pointerInput(feature) {
@@ -109,13 +152,14 @@ fun FavoriteCarousel(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .blur(blurRadius)
                         .padding(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(40.dp)
                             .background(
                                 color = ColorUtil.getPastelColorFor(resolvedTitle),
                                 shape = CircleShape
@@ -125,7 +169,7 @@ fun FavoriteCarousel(
                         Icon(
                             painter = painterResource(id = feature.iconRes),
                             contentDescription = resolvedTitle,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(24.dp),
                             tint = ColorUtil.getVibrantColorFor(resolvedTitle)
                         )
                     }

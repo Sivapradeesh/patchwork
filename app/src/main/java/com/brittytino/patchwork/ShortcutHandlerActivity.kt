@@ -3,7 +3,6 @@ package com.brittytino.patchwork
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import com.brittytino.patchwork.R
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import com.brittytino.patchwork.ui.activities.AppFreezingActivity
-import com.brittytino.patchwork.ui.theme.PatchworkTheme
+import com.brittytino.patchwork.ui.theme.EssentialsTheme
 import com.brittytino.patchwork.utils.FreezeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,13 +41,14 @@ class ShortcutHandlerActivity : ComponentActivity() {
 
         if (packageName != null) {
             setContent {
-                val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                val viewModel: com.brittytino.patchwork.viewmodels.MainViewModel =
+                    androidx.lifecycle.viewmodel.compose.viewModel()
                 val context = androidx.compose.ui.platform.LocalContext.current
                 androidx.compose.runtime.LaunchedEffect(Unit) {
                     viewModel.check(context)
                 }
                 val isPitchBlackThemeEnabled by viewModel.isPitchBlackThemeEnabled
-                PatchworkTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
+                EssentialsTheme(pitchBlackTheme = isPitchBlackThemeEnabled) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -72,7 +72,11 @@ class ShortcutHandlerActivity : ComponentActivity() {
                     startActivity(launchIntent)
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@ShortcutHandlerActivity, R.string.error_app_uninstalled, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@ShortcutHandlerActivity,
+                            R.string.error_app_uninstalled,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
                 finish()

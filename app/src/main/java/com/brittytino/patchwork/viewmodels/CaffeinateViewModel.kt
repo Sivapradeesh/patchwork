@@ -16,10 +16,11 @@ class CaffeinateViewModel : ViewModel() {
     val startingTimeLeft get() = CaffeinateController.startingTimeLeft
     val selectedTimeout get() = CaffeinateController.selectedTimeout
     val timeoutPresets = CaffeinateController.timeoutPresets
-    
+
     val postNotificationsGranted = mutableStateOf(false)
     val batteryOptimizationGranted = mutableStateOf(false)
     val abortWithScreenOff = mutableStateOf(true)
+    val skipCountdown = mutableStateOf(false)
     val enabledPresets = mutableStateOf(setOf<Int>())
 
     fun check(context: Context) {
@@ -28,14 +29,18 @@ class CaffeinateViewModel : ViewModel() {
             context,
             Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED
-        
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-        batteryOptimizationGranted.value = powerManager.isIgnoringBatteryOptimizations(context.packageName)
+
+        val powerManager =
+            context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        batteryOptimizationGranted.value =
+            powerManager.isIgnoringBatteryOptimizations(context.packageName)
 
         val prefs = context.getSharedPreferences("caffeinate_prefs", Context.MODE_PRIVATE)
         abortWithScreenOff.value = prefs.getBoolean("abort_screen_off", true)
-        
-        val savedPresets = prefs.getStringSet("enabled_presets", timeoutPresets.map { it.toString() }.toSet())
+        skipCountdown.value = prefs.getBoolean("skip_countdown", false)
+
+        val savedPresets =
+            prefs.getStringSet("enabled_presets", timeoutPresets.map { it.toString() }.toSet())
         enabledPresets.value = savedPresets?.map { it.toInt() }?.toSet() ?: timeoutPresets.toSet()
     }
 
@@ -55,13 +60,19 @@ class CaffeinateViewModel : ViewModel() {
         val prefs = context.getSharedPreferences("caffeinate_prefs", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("abort_screen_off", value).apply()
         abortWithScreenOff.value = value
-        
+
         if (isActive.value) {
             val intent = Intent(context, CaffeinateWakeLockService::class.java).apply {
                 action = "UPDATE_PREFS"
             }
             context.startService(intent)
         }
+    }
+
+    fun setSkipCountdown(value: Boolean, context: Context) {
+        val prefs = context.getSharedPreferences("caffeinate_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("skip_countdown", value).apply()
+        skipCountdown.value = value
     }
 
     fun toggle(context: Context) {

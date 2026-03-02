@@ -4,55 +4,41 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.brittytino.patchwork.ui.components.diy.AutomationItem
-import com.brittytino.patchwork.viewmodels.DIYViewModel
-
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.ui.activities.AutomationEditorActivity
-import com.brittytino.patchwork.ui.components.sheets.NewAutomationSheet
-import androidx.compose.ui.platform.LocalView
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
-import com.brittytino.patchwork.utils.HapticUtil
+import com.brittytino.patchwork.ui.components.diy.AutomationItem
+import com.brittytino.patchwork.ui.components.sheets.NewAutomationSheet
+import com.brittytino.patchwork.viewmodels.DIYViewModel
 
 @Composable
 fun DIYScreen(
     modifier: Modifier = Modifier,
-    viewModel: DIYViewModel = viewModel()
+    viewModel: DIYViewModel = viewModel(),
+    showNewAutomationSheet: Boolean = false,
+    onDismissNewAutomationSheet: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val automations by viewModel.automations.collectAsState()
     val focusManager = LocalFocusManager.current
-    
-    var showNewAutomationSheet by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -61,7 +47,7 @@ fun DIYScreen(
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
-                .padding(24.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start
         ) {
@@ -82,7 +68,7 @@ fun DIYScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 150.dp)
                 ) {
                     if (enabledAutomations.isNotEmpty()) {
                         item {
@@ -99,7 +85,12 @@ fun DIYScreen(
                                     AutomationItem(
                                         automation = automation,
                                         onClick = {
-                                            context.startActivity(AutomationEditorActivity.createIntent(context, automation.id))
+                                            context.startActivity(
+                                                AutomationEditorActivity.createIntent(
+                                                    context,
+                                                    automation.id
+                                                )
+                                            )
                                         },
                                         onDelete = {
                                             viewModel.deleteAutomation(automation.id)
@@ -128,7 +119,12 @@ fun DIYScreen(
                                     AutomationItem(
                                         automation = automation,
                                         onClick = {
-                                            context.startActivity(AutomationEditorActivity.createIntent(context, automation.id))
+                                            context.startActivity(
+                                                AutomationEditorActivity.createIntent(
+                                                    context,
+                                                    automation.id
+                                                )
+                                            )
                                         },
                                         onDelete = {
                                             viewModel.deleteAutomation(automation.id)
@@ -144,32 +140,13 @@ fun DIYScreen(
                 }
             }
         }
-        
-        // FAB
-        val view = LocalView.current
-        FloatingActionButton(
-            onClick = { 
-                HapticUtil.performUIHaptic(view)
-                showNewAutomationSheet = true 
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 32.dp, end = 32.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.rounded_add_24),
-                contentDescription = stringResource(R.string.diy_editor_new_title)
-            )
-        }
     }
 
     if (showNewAutomationSheet) {
         NewAutomationSheet(
-            onDismiss = { showNewAutomationSheet = false },
+            onDismiss = onDismissNewAutomationSheet,
             onOptionSelected = { type ->
-                showNewAutomationSheet = false
+                onDismissNewAutomationSheet()
                 context.startActivity(AutomationEditorActivity.createIntent(context, type))
             }
         )

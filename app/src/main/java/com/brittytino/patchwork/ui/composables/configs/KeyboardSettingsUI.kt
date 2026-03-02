@@ -1,19 +1,18 @@
 package com.brittytino.patchwork.ui.composables.configs
 
-import android.content.SharedPreferences
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,13 +31,13 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import com.brittytino.patchwork.R
 import com.brittytino.patchwork.ui.components.cards.IconToggleItem
 import com.brittytino.patchwork.ui.components.containers.RoundedCardContainer
 import com.brittytino.patchwork.ui.components.sliders.ConfigSliderItem
 import com.brittytino.patchwork.ui.modifiers.highlight
 import com.brittytino.patchwork.viewmodels.MainViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -75,41 +74,41 @@ fun KeyboardSettingsUI(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (!isKeyboardEnabled) {
-                        Button(
-                            onClick = { viewModel.openImeSettings(context) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.rounded_settings_24),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.btn_enable_keyboard))
-                        }
-                    } else if (!isKeyboardSelected) {
-                        Button(
-                            onClick = { viewModel.showImePicker(context) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.rounded_keyboard_24),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.btn_select_keyboard))
-                        }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (!isKeyboardEnabled) {
+                    Button(
+                        onClick = { viewModel.openImeSettings(context) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.rounded_settings_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.btn_enable_keyboard))
+                    }
+                } else if (!isKeyboardSelected) {
+                    Button(
+                        onClick = { viewModel.showImePicker(context) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.rounded_keyboard_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.btn_select_keyboard))
                     }
                 }
+            }
         }
 
         // Test Field
@@ -117,7 +116,9 @@ fun KeyboardSettingsUI(
             value = text,
             onValueChange = { text = it },
             label = { Text(stringResource(R.string.test_keyboard_hint)) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             shape = RoundedCornerShape(24.dp)
         )
 
@@ -280,8 +281,41 @@ fun KeyboardSettingsUI(
                 onCheckedChange = { viewModel.setKeyboardClipboardEnabled(it, context) },
                 modifier = Modifier.highlight(highlightSetting == "keyboard_clipboard_enabled")
             )
+
+            IconToggleItem(
+                iconRes = R.drawable.rounded_keyboard_24,
+                title = "Long press for symbols",
+                isChecked = viewModel.isLongPressSymbolsEnabled.value,
+                onCheckedChange = { viewModel.setLongPressSymbolsEnabled(it, context) },
+                modifier = Modifier.highlight(highlightSetting == "keyboard_long_press_symbols")
+            )
+
+            IconToggleItem(
+                iconRes = R.drawable.rounded_book_2_24,
+                title = "User Dictionary (Learn words)",
+                isChecked = viewModel.isUserDictionaryEnabled.value,
+                onCheckedChange = { viewModel.setUserDictionaryEnabled(it, context) },
+                modifier = Modifier.highlight(highlightSetting == "user_dictionary_enabled")
+            )
+
+            if (viewModel.isUserDictionaryEnabled.value) {
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_settings_24,
+                    title = "Manage Learned Words",
+                    isChecked = false,
+                    showToggle = false,
+                    onCheckedChange = { viewModel.isUserDictionarySheetVisible.value = true }
+                )
+            }
         }
 
         Spacer(Modifier.height(32.dp))
+        
+        if (viewModel.isUserDictionarySheetVisible.value) {
+            com.brittytino.patchwork.ui.composables.sheets.UserDictionaryBottomSheet(
+                viewModel = viewModel,
+                onDismissRequest = { viewModel.isUserDictionarySheetVisible.value = false }
+            )
+        }
     }
 }

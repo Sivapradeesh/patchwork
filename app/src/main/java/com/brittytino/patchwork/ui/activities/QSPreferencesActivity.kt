@@ -19,9 +19,9 @@ class QSPreferencesActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             intent.getParcelableExtra(Intent.EXTRA_COMPONENT_NAME)
         }
-        
+
         Log.d("QSPreferences", "Received long-press for: ${componentName?.className}")
-        
+
         if (componentName != null) {
             // Special case for Sound Mode to open the system volume panel
             if (componentName.className == "com.brittytino.patchwork.services.tiles.SoundModeTileService") {
@@ -42,11 +42,29 @@ class QSPreferencesActivity : ComponentActivity() {
                 return
             }
 
+            if (componentName.className == "com.brittytino.patchwork.services.tiles.PrivateDnsTileService") {
+                val intent = Intent(this, PrivateDnsSettingsActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                startActivity(intent)
+                finish()
+                return
+            }
+
             if (componentName.className == "com.brittytino.patchwork.services.tiles.AdaptiveBrightnessTileService") {
                 val displayIntent = Intent(Settings.ACTION_DISPLAY_SETTINGS).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
                 startActivity(displayIntent)
+                finish()
+                return
+            }
+
+            if (componentName.className == "com.brittytino.patchwork.services.tiles.DeveloperOptionsTileService") {
+                val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                startActivity(devIntent)
                 finish()
                 return
             }
@@ -63,8 +81,13 @@ class QSPreferencesActivity : ComponentActivity() {
                 "com.brittytino.patchwork.services.tiles.NfcTileService" -> "NFC"
                 "com.brittytino.patchwork.services.tiles.AdaptiveBrightnessTileService" -> "Quick settings tiles"
                 "com.brittytino.patchwork.services.tiles.MapsPowerSavingTileService" -> "Maps power saving mode"
+                "com.brittytino.patchwork.services.tiles.UsbDebuggingTileService" -> "Quick settings tiles"
+                "com.brittytino.patchwork.services.tiles.BatteryNotificationTileService" -> "Battery notification"
+                "com.brittytino.patchwork.services.tiles.ChargeQuickTileService" -> "Quick settings tiles"
+                "com.brittytino.patchwork.services.tiles.AlwaysOnDisplayTileService" -> "Always on Display"
                 else -> null
             }
+
 
             Log.d("QSPreferences", "Mapping to feature: $feature")
 
@@ -87,7 +110,7 @@ class QSPreferencesActivity : ComponentActivity() {
                 }
             }
         }
-        
+
         finish()
     }
 }

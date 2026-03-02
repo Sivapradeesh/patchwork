@@ -1,7 +1,5 @@
 package com.brittytino.patchwork.services.handlers
 
-import com.brittytino.patchwork.R
-
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK
 import android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN
@@ -23,10 +21,12 @@ class SecurityHandler(
 
     fun onAccessibilityEvent(event: AccessibilityEvent) {
         val prefs = service.getSharedPreferences("essentials_prefs", Context.MODE_PRIVATE)
-        val isScreenLockedSecurityEnabled = prefs.getBoolean("screen_locked_security_enabled", false)
+        val isScreenLockedSecurityEnabled =
+            prefs.getBoolean("screen_locked_security_enabled", false)
 
         if (isScreenLockedSecurityEnabled) {
-            val keyguardManager = service.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            val keyguardManager =
+                service.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
             if (keyguardManager.isKeyguardLocked) {
                 if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                     val source = event.source
@@ -46,10 +46,10 @@ class SecurityHandler(
             "Donn", // French (Données)
             "Cellular" // Some variants
         )
-        
+
         var isNetworkTile = false
         for (text in keywords) {
-             if (findNodeByText(source, text)) {
+            if (findNodeByText(source, text)) {
                 isNetworkTile = true
                 break
             }
@@ -59,14 +59,18 @@ class SecurityHandler(
             setReducedAnimationScale()
             service.performGlobalAction(GLOBAL_ACTION_BACK)
             lockDeviceHard()
-            Toast.makeText(service, com.brittytino.patchwork.R.string.error_unlock_network_settings, Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                service,
+                com.brittytino.patchwork.R.string.error_unlock_network_settings,
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
     private fun findNodeByText(node: AccessibilityNodeInfo, text: String): Boolean {
         val nodes = node.findAccessibilityNodeInfosByText(text)
         if (nodes.isNotEmpty()) return true
-        
+
         val desc = node.contentDescription
         return desc != null && desc.toString().contains(text, ignoreCase = true)
     }

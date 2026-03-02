@@ -16,7 +16,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.math.*
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class LocationReachedViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = LocationReachedRepository(application)
@@ -24,26 +29,29 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
 
     var alarm = mutableStateOf(repository.getAlarm())
         private set
-    
+
     var isProcessingCoordinates = mutableStateOf(false)
         private set
 
     var currentDistance = mutableStateOf<Float?>(null)
         private set
-    
+
     var startDistance = mutableStateOf(repository.getStartDistance())
         private set
 
     init {
-        startDistanceTracking()
-        
+        // Initial distance check
+        if (alarm.value.latitude != 0.0 && alarm.value.longitude != 0.0) {
+            updateCurrentDistance()
+        }
+
         // Observe shared state for real-time updates across activities
         viewModelScope.launch {
             LocationReachedRepository.isProcessing.collect {
                 isProcessingCoordinates.value = it
             }
         }
-        
+
         viewModelScope.launch {
             LocationReachedRepository.alarmFlow.collect { newAlarm ->
                 newAlarm?.let {
@@ -71,7 +79,7 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
             alarm.value = enabledAlarm
             repository.saveAlarm(enabledAlarm)
             LocationReachedService.start(getApplication())
-            
+
             // Refreshed start distance logic
             fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
                 .addOnSuccessListener { location ->
@@ -97,19 +105,32 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
         // User said "keep last track in memory (only destination)".
     }
 
-    private fun startDistanceTracking() {
-        viewModelScope.launch {
+    private var distanceTrackingJob: kotlinx.coroutines.Job? = null
+
+    fun startUiTracking() {
+        if (distanceTrackingJob?.isActive == true) return
+
+        distanceTrackingJob = viewModelScope.launch {
             while (true) {
-                // Tracking should only happen if enabled? Or just if coordinates exist?
-                // Logic: Distance displayed in UI needs coords. Service needs enabled.
+                // Tracking should only happen if coordinates exist
                 if (alarm.value.latitude != 0.0 && alarm.value.longitude != 0.0) {
                     updateCurrentDistance()
                 } else {
                     currentDistance.value = null
                 }
-                delay(10000) // Update every 10 seconds
+                delay(10000) // Update every 10 seconds while UI is active
             }
         }
+    }
+
+    fun stopUiTracking() {
+        distanceTrackingJob?.cancel()
+        distanceTrackingJob = null
+    }
+
+    override fun onCleared() {
+        stopUiTracking()
+        super.onCleared()
     }
 
     @android.annotation.SuppressLint("MissingPermission")
@@ -142,11 +163,14 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun updateAlarm(newAlarm: LocationAlarm) {
+        val oldAlarm = alarm.value
         alarm.value = newAlarm
         repository.saveAlarm(newAlarm)
-        
-        // If updating radius while enabled, ensure service stays up or is updated?
-        // Service just reads from repo loop, so saving is enough.
+
+        // If coordinates changed, refresh distance immediately
+        if (oldAlarm.latitude != newAlarm.latitude || oldAlarm.longitude != newAlarm.longitude) {
+            updateCurrentDistance()
+        }
     }
 
     fun handleIntent(intent: android.content.Intent): Boolean {
@@ -154,18 +178,26 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
         val type = intent.type
         val data = intent.data
 
-        android.util.Log.d("LocationReachedVM", "handleIntent: action=$action, type=$type, data=$data")
+        android.util.Log.d(
+            "LocationReachedVM",
+            "handleIntent: action=$action, type=$type, data=$data"
+        )
 
         val textToParse = when {
             action == android.content.Intent.ACTION_SEND && type == "text/plain" -> {
                 intent.getStringExtra(android.content.Intent.EXTRA_TEXT)
             }
+
             action == android.content.Intent.ACTION_VIEW && data?.scheme == "geo" -> {
                 data.toString()
             }
-            action == android.content.Intent.ACTION_VIEW && (data?.host?.contains("google.com") == true || data?.host?.contains("goo.gl") == true) -> {
+
+            action == android.content.Intent.ACTION_VIEW && (data?.host?.contains("google.com") == true || data?.host?.contains(
+                "goo.gl"
+            ) == true) -> {
                 data.toString()
             }
+
             else -> null
         }
 
@@ -184,22 +216,25 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
         // Broad regex for coordinates: looks for two floats separated by a comma
         // Supports: "40.7127, -74.0059", "geo:40.7127,-74.0059", "@40.7127,-74.0059", "q=40.7127,-74.0059"
         val commaRegex = Regex("(-?\\d+\\.\\d+)\\s*,\\s*(-?\\d+\\.\\d+)")
-        
+
         // Pattern for Google Maps data URLs: !3d40.7127!4d-74.0059
         val dataRegex = Regex("!3d(-?\\d+\\.\\d+)!4d(-?\\d+\\.\\d+)")
 
         val match = commaRegex.find(text) ?: dataRegex.find(text)
-        
+
         if (match != null) {
             val lat = match.groupValues[1].toDoubleOrNull() ?: 0.0
             val lng = match.groupValues[2].toDoubleOrNull() ?: 0.0
-            
+
             if (lat != 0.0 && lng != 0.0) {
                 android.util.Log.d("LocationReachedVM", "Parsed coordinates: $lat, $lng")
                 // Staging mode: don't enable yet
                 updateAlarm(alarm.value.copy(latitude = lat, longitude = lng, isEnabled = false))
-                android.widget.Toast.makeText(getApplication(), getApplication<Application>().getString(
-                    R.string.location_reached_toast_set, lat, lng), android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(
+                    getApplication(), getApplication<Application>().getString(
+                        R.string.location_reached_toast_set, lat, lng
+                    ), android.widget.Toast.LENGTH_SHORT
+                ).show()
                 repository.setIsProcessing(false)
                 return true
             }
@@ -236,8 +271,22 @@ class LocationReachedViewModel(application: Application) : AndroidViewModel(appl
                     val lng = pathMatch.groupValues[2].toDoubleOrNull() ?: 0.0
                     if (lat != 0.0 && lng != 0.0) {
                         // Staging mode: don't enable yet
-                        updateAlarm(alarm.value.copy(latitude = lat, longitude = lng, isEnabled = false))
-                        android.widget.Toast.makeText(getApplication(), getApplication<Application>().getString(R.string.location_reached_toast_set, lat, lng), android.widget.Toast.LENGTH_SHORT).show()
+                        updateAlarm(
+                            alarm.value.copy(
+                                latitude = lat,
+                                longitude = lng,
+                                isEnabled = false
+                            )
+                        )
+                        android.widget.Toast.makeText(
+                            getApplication(),
+                            getApplication<Application>().getString(
+                                R.string.location_reached_toast_set,
+                                lat,
+                                lng
+                            ),
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
                 repository.setIsProcessing(false)
