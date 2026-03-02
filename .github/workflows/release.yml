@@ -1,78 +1,44 @@
-name: Build and Release APK
+name: Android Release
 
 on:
   push:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
-
 jobs:
   build:
+    name: Build & Release
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
-        
+      
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
-          
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
-          
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
       - name: Rename APK
-        run: |
-          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/patchwork-${{ github.ref_name }}.apk
-          
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/patchwork-${{ github.ref_name }}.apk
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: app/build/outputs/apk/debug/patchwork-${{ github.ref_name }}.apk
           generate_release_notes: true
           draft: false
           prerelease: false
-          body: |
-            ## Patchwork ${{ github.ref_name }}
-            
-            ### What's New
-            See commit history for full details.
-            
-            ### Features
-            - 🛠️ **Productivity & Tools**: Maps Power Saving, Travel Alarm, DIY Automation, Button Remap, App Freezing
-            - 🔒 **Security & Privacy**: App Lock, Screen Locked Security
-            - 🎨 **Visual Customization**: Status Bar Icons, Notification Lighting, Dynamic Night Light
-            - ⚡ **Quick Settings Tiles**: 20+ useful system toggles
-            - 🎹 **Bonus**: Custom keyboard, Watermark, Batteries monitor
-            
-            ### Requirements
-            - Android 8.0 (Oreo) or higher
-            - Recommended: Android 13+ for full feature support
-            - Optional: Shizuku or Root for advanced features
-            
-            ### Installation
-            1. Download `patchwork-${{ github.ref_name }}.apk` below
-            2. Enable "Install from unknown sources" in your device settings
-            3. Install the APK and grant permissions as needed
-            
-            ### Developer
-            Built with ❤️ by [Tino Britty J](https://github.com/brittytino)
-            
-            ### Links
-            - 📖 [Full Documentation](https://github.com/brittytino/patchwork/blob/main/README.md)
-            - 💬 [Telegram Community](https://t.me/tidwib)
-            - 🐛 [Report Issues](https://github.com/brittytino/patchwork/issues)
-            
-            ---
-            
-            **Note**: This app uses advanced system APIs. While designed for safety, some features are experimental. Use responsibly.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
